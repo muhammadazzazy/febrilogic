@@ -3,6 +3,7 @@ from datetime import datetime
 
 import streamlit as st
 
+from config import FAST_API_BASE_URL
 
 st.set_page_config(
     page_title='Patient Information',

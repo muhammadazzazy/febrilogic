@@ -1,6 +1,10 @@
 """Show Symptom Checker page for FebriDx."""
 import requests
+from requests.exceptions import RequestException
+
 import streamlit as st
+
+from config import FAST_API_BASE_URL
 
 st.set_page_config(
     page_title='Symptom Checker',
@@ -10,9 +14,14 @@ st.set_page_config(
 )
 
 with st.spinner('Loading symptoms...'):
-    response = requests.get('http://localhost:8000/api/diseases-symptoms',
-                            timeout=10)
-if response.status_code != 200:
+    try:
+        response = requests.get(f'{FAST_API_BASE_URL}/api/diseases-symptoms',
+                                timeout=10)
+    except RequestException as e:
+        response = None
+        st.error(f'Error fetching symptoms: {e}')
+
+if response and response.status_code != 200:
     st.error('Failed to fetch symptoms from the API.')
 
 symptoms = [symptom.replace('_', ' ').title()

@@ -15,6 +15,9 @@ st.set_page_config(
 
 st.session_state.setdefault('loaded', False)
 
+if 'symptom_checker_reset' not in st.session_state:
+    st.session_state.symptom_checker_reset = False
+
 if not st.session_state.loaded:
     try:
         with st.spinner('Loading symptoms and definitions...'):
@@ -39,10 +42,11 @@ definitions: dict[str, str] = st.session_state.definitions_response.json().get(
     'definitions', {})
 
 st.header('🩺 Symptom Checker')
-if 'symptom_states' not in st.session_state:
+if 'symptom_states' not in st.session_state or st.session_state.symptom_checker_reset:
     st.session_state.symptom_states = {
         symptom: False for symptom in symptoms}
     st.session_state.submitted = False
+    st.session_state.symptom_checker_reset = True
 
 cols = st.columns(5)
 for i, symptom in enumerate(symptoms):
@@ -54,12 +58,23 @@ for i, symptom in enumerate(symptoms):
         help=f"{definitions.get(symptom.replace(' ', '_').lower(), 'No definition available.')}",
     )
 
-col = st.columns(5)[4]
-if col.button(label='Submit Symptoms', key='submit_symptoms', use_container_width=True, icon='✅'):
+if cols[4].button(label='Submit Symptoms', key='submit_symptoms', use_container_width=True, icon='✅'):
     st.session_state.submitted = True
+
+
+patient_symptoms: dict[str, bool] = {symptom.replace(
+    ' ', '_').lower(): st.session_state.symptom_states[symptom] for symptom in symptoms}
 
 if st.session_state.submitted:
     selected = [s for s, v in st.session_state.symptom_states.items() if v]
     st.success(
         f'Selected symptoms: {", ".join(selected) if selected else "None"}')
     st.session_state.submitted = False
+    try:
+        response = requests.post(
+            url=f'{FAST_API_BASE_URL}/api/symptoms',
+            json={'patient_symptoms': patient_symptoms},
+            timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+        )
+    except RequestException as e:
+        st.error(f'Error submitting symptoms: {e}')

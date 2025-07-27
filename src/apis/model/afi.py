@@ -18,7 +18,11 @@ def get_biomarker_row(*, biomarker_df: DataFrame, patient_id: str) -> dict[str, 
     return biomarker_row
 
 
-def get_updated_probs(biomarker_df: DataFrame, patient_id: str, expanded_disease_probabilities: list[tuple[str, float]], biomarker_stats_df: DataFrame) -> list[tuple[str, float]]:
+def get_updated_probs(biomarker_df: DataFrame,
+                      patient_id: str,
+                      expanded_disease_probabilities: list[tuple[str, float]],
+                      biomarker_stats_df: DataFrame) -> list[tuple[str, float]]:
+    """Update disease probabilities using biomarkers for a given patient."""
     biomarker_row: dict = get_biomarker_row(biomarker_df=biomarker_df,
                                             patient_id=patient_id)
 

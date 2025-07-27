@@ -1,35 +1,21 @@
 """FastAPI application for disease diagnosis using symptoms and biomarkers."""
-import os
-from io import StringIO
-from pathlib import Path
-from typing import Any, Final
+from typing import Any
 
 import csv
 import fastapi
 import pandas as pd
 import uvicorn
 
-from dotenv import load_dotenv
-from fastapi import File, UploadFile
 from pandas import DataFrame
+
+from config import (
+    SYMPTOMS_FILE_PATH, DISEASE_BIOMARKER_FILE_PATH,
+    SYMPTOM_DEFINITIONS_FILE_PATH
+)
 
 from model.afi import (
     process_patient_symptoms, diagnose_patient,
     expand_disease_probabilities, get_updated_probs
-)
-
-load_dotenv(dotenv_path=Path(__file__).parent / '.env')
-
-SYMPTOMS_FILE_PATH: Final[Path] = Path(
-    os.environ.get('SYMPTOMS_FILE_PATH')
-)
-
-DISEASE_BIOMARKER_FILE_PATH: Final[Path] = Path(
-    os.environ.get('DISEASE_BIOMARKER_FILE_PATH')
-)
-
-SYMPTOM_DEFINITIONS_FILE_PATH: Final[Path] = Path(
-    os.environ.get('SYMPTOM_DEFINITIONS_FILE_PATH')
 )
 
 api = fastapi.FastAPI()
@@ -38,9 +24,11 @@ api.state.diseases = None
 api.state.symptoms = None
 api.state.biomarker_stats_df = None
 
-api.state.patient_data = None
-api.state.biomarker_df = None
+api.state.patient_data = []
 
+api.state.patient_symptoms = []
+
+api.state.biomarker_df = None
 
 api.state.all_results = None
 api.state.per_disease_stats = None
@@ -107,34 +95,28 @@ def get_biomarkers() -> dict[str, Any]:
 
 
 @api.post('/api/patient')
-async def upload_patient_files(patient_file: UploadFile = File(...),
-                               biomarker_file: UploadFile = File(...)) -> dict[str, Any]:
-    """Load patient data and biomarkers from uploaded CSV files."""
-    if patient_file.content_type != 'text/csv':
-        return {'error': 'Patient file must be CSV.'}
-    if biomarker_file.content_type != 'text/csv':
-        return {'error': 'Biomarker file must be CSV.'}
-
-    content = await patient_file.read()
-    decoded = content.decode('utf-8')
-    file_sim = StringIO(decoded)
-    reader = csv.DictReader(file_sim)
-    patient_data: list[dict[str, Any]] = list(reader)
-    api.state.patient_data = patient_data
-
-    biomarker_content = await biomarker_file.read()
-
-    biomarker_df: DataFrame = pd.read_csv(
-        StringIO(biomarker_content.decode('utf-8')))
-
-    api.state.biomarker_df = biomarker_df
-
-    if not patient_data or biomarker_df.empty:
+def upload_patient_data(patient_data: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    """Load patient data and biomarkers from the frontend."""
+    if not patient_data.get('patient_data'):
         return {'error': 'No patient data found.'}
+    api.state.patient_data.append(patient_data.get('patient_data', {}))
     return {
         'message': 'Patient data loaded successfully.',
-        'patient_data': patient_data,
-        'biomarker_data': biomarker_df.to_dict(orient='records')
+        'patient_data': patient_data
+    }
+
+
+@api.post('/api/symptoms')
+def upload_symptoms(patient_symptoms: dict[str, Any]) -> dict[str, Any]:
+    """Load symptoms data for a patient."""
+    if not patient_symptoms.get('patient_symptoms'):
+        return {'error': 'No symptoms data found.'}
+    print(patient_symptoms.get('patient_symptoms', {}))
+    api.state.patient_symptoms.append(
+        patient_symptoms.get('patient_symptoms', {}))
+    return {
+        'message': 'Patient symptom data loaded successfully.',
+        'patient_symptoms': patient_symptoms
     }
 
 

@@ -15,17 +15,23 @@ st.set_page_config(
 st.header('ℹ️ Patient Information')
 if 'patient_info' not in st.session_state:
     st.session_state.submitted = False
-date = st.date_input('Date', key='date', value=datetime.today().isoformat(),
-                     width=300)
-patient_id = st.text_input('Patient ID', key='patient_id', width=300)
-patient_name = st.text_input('Patient Name', key='patient_name', width=300)
-patient_age = st.number_input('Age', min_value=0, max_value=120,
-                              key='patient_age', width=300)
-patient_sex = st.selectbox('Sex', options=['Male', 'Female'],
-                           key='patient_sex', index=0, width=300)
-race = st.selectbox('Race', options=['White', 'Black', 'Asian', 'Hispanic', 'Other'],
-                    key='patient_race', index=0, width=300)
-if st.button('Submit Patient Info', key='submit_patient_info'):
+
+columns = st.columns(3, gap='medium')
+date = columns[0].date_input('Date', key='date', value=datetime.today().isoformat(),
+                             width='stretch')
+patient_id = columns[1].text_input(
+    'Patient ID', key='patient_id', width='stretch')
+patient_name = columns[2].text_input(
+    'Patient Name', key='patient_name', width='stretch')
+patient_age = columns[0].number_input('Age', min_value=0, max_value=120,
+                                      key='patient_age', width='stretch')
+patient_sex = columns[1].selectbox('Sex', options=['Male', 'Female'],
+                                   key='patient_sex', index=0, width='stretch')
+race = columns[2].selectbox('Race', options=['White', 'Black', 'Asian', 'Hispanic', 'Other'],
+                            key='patient_race', index=0, width='stretch')
+
+if columns[2].button('Submit Patient Information', key='submit_patient_info',
+                     icon='✅', use_container_width=True):
     st.session_state.submitted = True
 if st.session_state.submitted:
     st.success('Patient information submitted successfully!')

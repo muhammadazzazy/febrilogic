@@ -2,7 +2,7 @@
 import os
 from io import StringIO
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 import csv
 import fastapi
@@ -20,12 +20,16 @@ from model.afi import (
 
 load_dotenv()
 
-SYMPTOMS_FILE_PATH = Path(
+SYMPTOMS_FILE_PATH: Final[Path] = Path(
     os.environ.get('SYMPTOMS_FILE_PATH')
 )
 
-DISEASE_BIOMARKER_FILE_PATH = Path(
+DISEASE_BIOMARKER_FILE_PATH: Final[Path] = Path(
     os.environ.get('DISEASE_BIOMARKER_FILE_PATH')
+)
+
+SYMPTOM_DEFINITIONS_FILE_PATH: Final[Path] = Path(
+    os.environ.get('SYMPTOM_DEFINITIONS_FILE_PATH')
 )
 
 api = fastapi.FastAPI()
@@ -64,6 +68,25 @@ def get_symptoms() -> dict[str, Any]:
         'symptoms': symptoms,
         'diseases': list(diseases.keys())
     }
+
+
+@api.get('/api/definitions')
+def get_definitions() -> dict[str, Any]:
+    """Fetch symptom definitions from the corresponding public CSV file."""
+    if not SYMPTOM_DEFINITIONS_FILE_PATH.exists():
+        return {'error': 'Symptom definitions file not found.'}
+    try:
+        definitions_df: DataFrame = pd.read_csv(
+            filepath_or_buffer=SYMPTOM_DEFINITIONS_FILE_PATH)
+        definitions_df['symptom'] = definitions_df['Symptoms'].astype(
+            str).str.strip()
+        definitions_df['definition'] = definitions_df['Definitions needed to be written'].astype(
+            str).str.strip()
+        return {
+            'definitions': definitions_df.set_index('symptom').to_dict()['definition']
+        }
+    except KeyError:
+        return {'error': 'Invalid format in symptom definitions file.'}
 
 
 @api.get('/api/biomarkers')

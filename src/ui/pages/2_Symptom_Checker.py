@@ -4,7 +4,7 @@ from requests.exceptions import RequestException
 
 import streamlit as st
 
-from config import FAST_API_BASE_URL
+from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 st.set_page_config(
     page_title='Symptom Checker',
@@ -13,19 +13,30 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-with st.spinner('Loading symptoms...'):
+st.session_state.setdefault('loaded', False)
+
+if not st.session_state.loaded:
     try:
-        response = requests.get(f'{FAST_API_BASE_URL}/api/diseases-symptoms',
-                                timeout=10)
+        with st.spinner('Loading symptoms and definitions...'):
+            symptoms_response = requests.get(f'{FAST_API_BASE_URL}/api/diseases-symptoms',
+                                             timeout=(FAST_API_CONNECT_TIMEOUT,
+                                                      FAST_API_READ_TIMEOUT))
+            definitions_response = requests.get(f'{FAST_API_BASE_URL}/api/definitions',
+                                                timeout=(FAST_API_CONNECT_TIMEOUT,
+                                                         FAST_API_READ_TIMEOUT))
+        st.success('Symptoms and definitions loaded successfully!')
+        st.session_state.loaded = True
+        st.session_state.symptoms_response = symptoms_response
+        st.session_state.definitions_response = definitions_response
     except RequestException as e:
-        response = None
         st.error(f'Error fetching symptoms: {e}')
+        st.stop()
 
-if response and response.status_code != 200:
-    st.error('Failed to fetch symptoms from the API.')
+symptoms: list[str] = [symptom.replace('_', ' ').title()
+                       for symptom in st.session_state.symptoms_response.json().get('symptoms', [])]
 
-symptoms = [symptom.replace('_', ' ').title()
-            for symptom in response.json().get('symptoms', [])]
+definitions: dict[str, str] = st.session_state.definitions_response.json().get(
+    'definitions', {})
 
 st.header('🩺 Symptom Checker')
 if 'symptom_states' not in st.session_state:
@@ -39,11 +50,12 @@ for i, symptom in enumerate(symptoms):
     st.session_state.symptom_states[symptom] = col.checkbox(
         label=symptom,
         value=st.session_state.symptom_states[symptom],
-        key=f'{symptom}'
+        key=f'{symptom}',
+        help=f"{definitions.get(symptom.replace(' ', '_').lower(), 'No definition available.')}",
     )
 
 col = st.columns(5)[4]
-if col.button(label='Submit Symptoms', key='submit_symptoms', use_container_width=True):
+if col.button(label='Submit Symptoms', key='submit_symptoms', use_container_width=True, icon='✅'):
     st.session_state.submitted = True
 
 if st.session_state.submitted:

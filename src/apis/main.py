@@ -18,7 +18,7 @@ from model.afi import (
     expand_disease_probabilities, get_updated_probs
 )
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).parent / '.env')
 
 SYMPTOMS_FILE_PATH: Final[Path] = Path(
     os.environ.get('SYMPTOMS_FILE_PATH')

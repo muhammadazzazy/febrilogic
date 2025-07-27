@@ -4,6 +4,13 @@ from datetime import datetime
 import streamlit as st
 
 
+st.set_page_config(
+    page_title='Patient Information',
+    page_icon='ℹ️',
+    layout='wide',
+    initial_sidebar_state='expanded'
+)
+
 st.header('ℹ️ Patient Information')
 if 'patient_info' not in st.session_state:
     st.session_state.submitted = False

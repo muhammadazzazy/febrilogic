@@ -2,6 +2,13 @@
 import requests
 import streamlit as st
 
+st.set_page_config(
+    page_title='Symptom Checker',
+    page_icon='🩺',
+    layout='wide',
+    initial_sidebar_state='expanded'
+)
+
 with st.spinner('Loading symptoms...'):
     response = requests.get('http://localhost:8000/api/diseases-symptoms',
                             timeout=10)

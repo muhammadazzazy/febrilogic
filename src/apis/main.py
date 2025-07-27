@@ -1,17 +1,31 @@
 """FastAPI application for disease diagnosis using symptoms and biomarkers."""
+import os
 from io import StringIO
+from pathlib import Path
 from typing import Any
 
 import csv
 import fastapi
 import pandas as pd
 import uvicorn
+
+from dotenv import load_dotenv
 from fastapi import File, UploadFile
 from pandas import DataFrame
 
 from model.afi import (
     process_patient_symptoms, diagnose_patient,
     expand_disease_probabilities, get_updated_probs
+)
+
+load_dotenv()
+
+SYMPTOMS_FILE_PATH = Path(
+    os.environ.get('SYMPTOMS_FILE_PATH')
+)
+
+DISEASE_BIOMARKER_FILE_PATH = Path(
+    os.environ.get('DISEASE_BIOMARKER_FILE_PATH')
 )
 
 api = fastapi.FastAPI()
@@ -28,52 +42,45 @@ api.state.all_results = None
 api.state.per_disease_stats = None
 
 
-@api.post('/api/initialize')
-async def initialize(symptom_weights_file: UploadFile = File(...),
-                     disease_biomarker_file: UploadFile = File(...)) -> dict[str, Any]:
-    """Load symptom weights and biomarker statistics from uploaded CSV files."""
-    if symptom_weights_file.content_type != 'text/csv':
-        return {'error': 'Symptom weights file must be a CSV.'}
-
-    if disease_biomarker_file.content_type != 'text/csv':
-        return {'error': 'Biomarker statistics file must be a CSV.'}
-
-    # Stage 1: Symptom Weights Data Loading
-    content = await symptom_weights_file.read()
-    decoded = content.decode("utf-8")
-    file_sim = StringIO(decoded)
-    reader = csv.DictReader(file_sim)
-
-    diseases: dict[str, dict[str, float]] = {}
-    symptoms: list[str] = []
-
-    for row in reader:
-        disease_name: str = row['disease'].strip()
-        diseases[disease_name] = {}
-        if not symptoms:
-            symptoms = [col for col in row.keys() if col != 'disease']
-        for symptom in symptoms:
-            diseases[disease_name][symptom] = float(row[symptom])
-
-    api.state.diseases = diseases
+@api.get('/api/diseases-symptoms')
+def get_symptoms() -> dict[str, Any]:
+    """Fetch symptoms and diseases from the API."""
+    if not SYMPTOMS_FILE_PATH.exists():
+        return {'error': 'Symptoms and diseases file not found.'}
+    with open(file=SYMPTOMS_FILE_PATH, mode='r', newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        diseases: dict[str, dict[str, float]] = {}
+        symptoms: list[str] = []
+        for row in reader:
+            disease_name: str = row['disease'].strip()
+            diseases[disease_name] = {}
+            if not symptoms:
+                symptoms = [col for col in row.keys() if col != 'disease']
+            for symptom in symptoms:
+                diseases[disease_name][symptom] = float(row[symptom])
     api.state.symptoms = symptoms
+    api.state.diseases = diseases
+    return {
+        'symptoms': symptoms,
+        'diseases': list(diseases.keys())
+    }
 
-    # Stage 2: Disease Biomarker Data Loading
-    biomarker_content = await disease_biomarker_file.read()
+
+@api.get('/api/biomarkers')
+def get_biomarkers() -> dict[str, Any]:
+    """Fetch biomarkers from the corresponding private CSV file."""
+    if not DISEASE_BIOMARKER_FILE_PATH.exists():
+        return {'error': 'Biomarker file not found.'}
 
     biomarker_stats_df: DataFrame = pd.read_csv(
-        StringIO(biomarker_content.decode('utf-8')))
+        filepath_or_buffer=DISEASE_BIOMARKER_FILE_PATH)
     biomarker_stats_df['disease'] = biomarker_stats_df['disease'].astype(
         str).str.strip()
 
     api.state.biomarker_stats_df = biomarker_stats_df
-
-    if not diseases or not symptoms or biomarker_stats_df.empty:
-        return {'error': 'Data loading failed. Please check the input files.'}
-    return {'message': 'Data loaded successfully.',
-            'diseases': list(diseases.keys()),
-            'symptoms': symptoms,
-            'biomarker_stats': biomarker_stats_df.to_dict(orient='records')}
+    return {
+        'biomarkers': biomarker_stats_df.to_dict(orient='records'),
+    }
 
 
 @api.post('/api/patient')
@@ -227,16 +234,16 @@ def get_accuracy() -> dict[str, Any]:
     n_symptoms_top1 = sum(
         1 for r in all_results if r['true_label'] == r['top1_symptoms'])
     n_symptoms_top2 = sum(1 for r in all_results if r['true_label'] in [
-                          r['top1_symptoms'], r['top2_symptoms']])
+        r['top1_symptoms'], r['top2_symptoms']])
     n_symptoms_top3 = sum(1 for r in all_results if r['true_label'] in [
-                          r['top1_symptoms'], r['top2_symptoms'], r['top3_symptoms']])
+        r['top1_symptoms'], r['top2_symptoms'], r['top3_symptoms']])
 
     n_biomarkers_top1 = sum(
         1 for r in all_results if r['true_label'] == r['top1_biomarkers'])
     n_biomarkers_top2 = sum(1 for r in all_results if r['true_label'] in [
-                            r['top1_biomarkers'], r['top2_biomarkers']])
+        r['top1_biomarkers'], r['top2_biomarkers']])
     n_biomarkers_top3 = sum(1 for r in all_results if r['true_label'] in [
-                            r['top1_biomarkers'], r['top2_biomarkers'], r['top3_biomarkers']])
+        r['top1_biomarkers'], r['top2_biomarkers'], r['top3_biomarkers']])
     return {
         'message': 'Overall and per-disease accuracy calculated successfully.',
         'total_patients': n_patients,

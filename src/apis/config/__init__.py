@@ -19,3 +19,7 @@ DISEASE_BIOMARKER_FILE_PATH: Final[Path] = Path(
 SYMPTOM_DEFINITIONS_FILE_PATH: Final[Path] = Path(
     os.environ.get('SYMPTOM_DEFINITIONS_FILE_PATH')
 )
+
+FAST_API_HOST: Final[str] = os.environ.get('FAST_API_HOST', '0.0.0.0')
+
+FAST_API_PORT: Final[int] = int(os.environ.get('FAST_API_PORT', 8000))

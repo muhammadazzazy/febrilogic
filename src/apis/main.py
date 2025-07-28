@@ -9,8 +9,8 @@ import uvicorn
 from pandas import DataFrame
 
 from config import (
-    SYMPTOMS_FILE_PATH, DISEASE_BIOMARKER_FILE_PATH,
-    SYMPTOM_DEFINITIONS_FILE_PATH
+    FAST_API_HOST, FAST_API_PORT, DISEASE_BIOMARKER_FILE_PATH,
+    SYMPTOMS_FILE_PATH, SYMPTOM_DEFINITIONS_FILE_PATH,
 )
 
 from model.afi import (
@@ -294,4 +294,4 @@ def generate_accuracy_table() -> dict[str, Any]:
     }
 
 
-uvicorn.run(api)
+uvicorn.run(api, host=FAST_API_HOST, port=FAST_API_PORT, log_level='info')

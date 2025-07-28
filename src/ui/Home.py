@@ -11,13 +11,11 @@ st.set_page_config(
 st.title('🧪 FebriDx')
 
 
-st.warning("""Disclaimer: This application is for educational purposes only
-           and should not be used for actual medical diagnosis or treatment.
+st.warning("""Disclaimer: This application is for research purposes only
+           and should not be used for medical diagnosis or treatment.
            Always consult a healthcare professional for medical advice.""",
            icon="⚠️")
 
-st.info("""FebriDx is funded by the Bartlett grant
-        and aims to provide a comprehensive diagnostic tool for dengue and other febrile illnesses.
-        This application allows users to input patient information, check symptoms,
-        and view biomarkers.""",
+st.info("""FebriDx is funded by a grant from the Bartlett Foundation, The American University in Cairo
+        to Professor Dr. Hassan Azzazy and aims to provide a comprehensive tool for differential diagnosis of acute febrile illnesses.""",
         icon="ℹ️")

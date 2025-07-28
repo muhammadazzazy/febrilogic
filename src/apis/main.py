@@ -1,15 +1,18 @@
 """FastAPI application for disease diagnosis using symptoms and biomarkers."""
+import sqlite3
+from contextlib import asynccontextmanager
 from typing import Any
 
 import csv
-import fastapi
 import pandas as pd
 import uvicorn
 
+from fastapi import FastAPI, HTTPException
 from pandas import DataFrame
 
 from config import (
     FAST_API_HOST, FAST_API_PORT, DISEASE_BIOMARKER_FILE_PATH,
+    PATIENT_DATABASE_FILE_PATH,
     SYMPTOMS_FILE_PATH, SYMPTOM_DEFINITIONS_FILE_PATH,
 )
 
@@ -18,7 +21,21 @@ from model.afi import (
     expand_disease_probabilities, get_updated_probs
 )
 
-api = fastapi.FastAPI()
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    """Initialize the FastAPI application and set up the database."""
+    create_schema: bool = not PATIENT_DATABASE_FILE_PATH.exists()
+    conn = sqlite3.connect(PATIENT_DATABASE_FILE_PATH)
+    conn.execute('PRAGMA foreign_keys = ON')
+    if create_schema:
+        with open('src/apis/sql/schema.sql', 'r', encoding='utf-8') as f:
+            conn.executescript(f.read())
+        conn.commit()
+    conn.close()
+    yield
+
+api = FastAPI(lifespan=lifespan)
 
 api.state.diseases = None
 api.state.symptoms = None
@@ -38,7 +55,8 @@ api.state.per_disease_stats = None
 def get_symptoms() -> dict[str, Any]:
     """Fetch symptoms and diseases from the API."""
     if not SYMPTOMS_FILE_PATH.exists():
-        return {'error': 'Symptoms and diseases file not found.'}
+        raise HTTPException(status_code=404,
+                            detail='Symptoms file not found.')
     with open(file=SYMPTOMS_FILE_PATH, mode='r', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         diseases: dict[str, dict[str, float]] = {}
@@ -62,28 +80,32 @@ def get_symptoms() -> dict[str, Any]:
 def get_definitions() -> dict[str, Any]:
     """Fetch symptom definitions from the corresponding public CSV file."""
     if not SYMPTOM_DEFINITIONS_FILE_PATH.exists():
-        return {'error': 'Symptom definitions file not found.'}
+        raise HTTPException(status_code=404,
+                            detail='Symptom definitions file not found.')
     try:
         symptom_definitions: DataFrame = pd.read_csv(
             filepath_or_buffer=SYMPTOM_DEFINITIONS_FILE_PATH)
         symptom_definitions['symptom'] = symptom_definitions['Symptoms'].astype(
             str).str.strip()
-        symptom_definitions['definition'] = symptom_definitions['Definitions needed to be written'].astype(
-            str).str.strip()
+        symptom_definitions['definition'] = \
+            symptom_definitions['Definitions needed to be written'].astype(
+                str).str.strip()
         symptom_definitions.sort_values(by='symptom', inplace=True)
         symptom_definitions.replace(to_replace='nan', value='', inplace=True)
         return {
             'symptom_definitions': symptom_definitions.set_index('symptom').to_dict()['definition']
         }
-    except KeyError:
-        return {'error': 'Invalid format in symptom definitions file.'}
+    except KeyError as e:
+        raise HTTPException(status_code=400,
+                            detail=f'Invalid format in symptom definitions file: {e}') from e
 
 
 @api.get('/api/biomarkers')
 def get_biomarkers() -> dict[str, Any]:
     """Fetch biomarkers from the corresponding private CSV file."""
     if not DISEASE_BIOMARKER_FILE_PATH.exists():
-        return {'error': 'Biomarker file not found.'}
+        raise HTTPException(status_code=404,
+                            detail='Biomarker file not found.')
 
     biomarker_stats_df: DataFrame = pd.read_csv(
         filepath_or_buffer=DISEASE_BIOMARKER_FILE_PATH)
@@ -97,28 +119,82 @@ def get_biomarkers() -> dict[str, Any]:
 
 
 @api.post('/api/patient')
-def upload_patient_data(patient_data: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def upload_patient_data(patient: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """Load patient data and biomarkers from the frontend."""
-    if not patient_data.get('patient_data'):
-        return {'error': 'No patient data found.'}
-    api.state.patient_data.append(patient_data.get('patient_data', {}))
+    if not patient.get('patient'):
+        raise HTTPException(status_code=404, detail='Patient data not found.')
+    api.state.patient_data.append(patient.get('patient', {}))
+    conn = sqlite3.connect(PATIENT_DATABASE_FILE_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT id FROM patients ORDER BY id DESC LIMIT 1'
+    )
+
+    patient_ids: list[tuple[int | None]] = []
+    patient_ids.append(cursor.fetchone())
+    cursor.execute(
+        'SELECT patient_id FROM symptoms ORDER BY patient_id DESC LIMIT 1'
+    )
+    patient_ids.append(cursor.fetchone())
+    if (patient_ids[0]) and (patient_ids[1]):
+        if patient_ids[0][0] - patient_ids[1][0] != 0:
+            raise HTTPException(
+                status_code=400,
+                detail='You must submit patient symptoms first.'
+            )
+    insert_query: str = 'INSERT INTO patients (name, age, sex, race, date) VALUES (?, ?, ?, ?, ?)'
+    cursor.execute(
+        insert_query,
+        (patient['patient']['name'], patient['patient']['age'],
+         patient['patient']['sex'], patient['patient']['race'],
+         patient['patient']['date'])
+    )
+    lastrowid: int = cursor.lastrowid
+    conn.commit()
+    conn.close()
     return {
-        'message': 'Patient data loaded successfully.',
-        'patient_data': patient_data
+        'message': 'Patient data uploaded successfully.',
+        'patient_id': lastrowid
     }
 
 
 @api.post('/api/symptoms')
-def upload_symptoms(patient_symptoms: dict[str, Any]) -> dict[str, Any]:
+def upload_symptoms(patient_symptoms: dict[str, dict[str, bool]]) -> dict[str, Any]:
     """Load symptoms data for a patient."""
     if not patient_symptoms.get('patient_symptoms'):
-        return {'error': 'No symptoms data found.'}
-    print(patient_symptoms.get('patient_symptoms', {}))
-    api.state.patient_symptoms.append(
-        patient_symptoms.get('patient_symptoms', {}))
+        raise HTTPException(status_code=404, detail='Patient data not found.')
+    conn = sqlite3.connect(PATIENT_DATABASE_FILE_PATH)
+    cursor = conn.cursor()
+    patient_ids: list[tuple[int | None]] = []
+    cursor.execute(
+        """SELECT id FROM patients ORDER BY id DESC LIMIT 1"""
+    )
+    patient_ids.append(cursor.fetchone())
+    cursor.execute(
+        """SELECT patient_id FROM symptoms ORDER BY patient_id DESC LIMIT 1"""
+    )
+    patient_ids.append(cursor.fetchone())
+    if patient_ids[0] and patient_ids[1]:
+        if patient_ids[0][0] - patient_ids[1][0] != 1:
+            raise HTTPException(
+                status_code=400,
+                detail='You must submit patient information first.'
+            )
+    num_of_symptoms: int = len(patient_symptoms['patient_symptoms'])
+    num_of_fields: int = num_of_symptoms + 1
+    symptom_flags: list[bool] = [
+        flag for flag in patient_symptoms['patient_symptoms'].values()]
+    question_marks: str = ','.join(['?'] * num_of_fields)
+    insert_query: str = \
+        f"""INSERT INTO symptoms (patient_id, {', '.join(
+            patient_symptoms['patient_symptoms'].keys()
+        )}) VALUES ({question_marks})"""
+    cursor.execute(insert_query, (patient_ids[0][0], *symptom_flags))
+    conn.commit()
+    conn.close()
     return {
         'message': 'Patient symptom data loaded successfully.',
-        'patient_symptoms': patient_symptoms
+        'patient_id': patient_ids[0]
     }
 
 

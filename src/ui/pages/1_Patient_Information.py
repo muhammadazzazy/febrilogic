@@ -1,9 +1,9 @@
 """Show Patient Information page for FebriDx."""
+import time
 from datetime import datetime
 
 import requests
-from requests.exceptions import RequestException
-
+from requests.exceptions import HTTPError
 
 import streamlit as st
 
@@ -22,22 +22,18 @@ if 'patient_info' not in st.session_state:
 
 
 with st.form('patient_info_form'):
-    columns = st.columns(3, gap='medium')
+    columns = st.columns(2, gap='medium', border=True)
     date = columns[0].date_input('Date', key='date', value=datetime.today(),
                                  width='stretch')
-    patient_id: str = columns[1].text_input(label='Patient ID',
-                                            key='patient_id',
-                                            width='stretch')
-    patient_name: str = columns[2].text_input(label='Patient Name',
+    patient_name: str = columns[1].text_input(label='Patient Name',
                                               key='patient_name',
                                               width='stretch')
     patient_age: int = columns[0].number_input(label='Age',
                                                min_value=0, max_value=120,
-                                               key='patient_age',
-                                               width='stretch')
+                                               key='patient_age', width='stretch', value=0)
     patient_sex: str = columns[1].selectbox(label='Sex', options=['Male', 'Female'],
                                             key='patient_sex', index=0, width='stretch')
-    race: str = columns[2].selectbox(label='Race',
+    race: str = columns[0].selectbox(label='Race',
                                      options=['White', 'Black',
                                               'Asian', 'Hispanic', 'Other'],
                                      key='patient_race', index=0, width='stretch')
@@ -50,10 +46,7 @@ with st.form('patient_info_form'):
 
 if submitted:
     missing_fields = []
-    if not patient_id:
-        missing_fields.append('Patient ID')
-
-    if not patient_age:
+    if patient_age is None:
         missing_fields.append('Patient Age')
 
     if not patient_sex:
@@ -65,9 +58,8 @@ if submitted:
 
     st.session_state.submitted = True
 
-patient_data: dict[str, str | int] = {
+patient: dict[str, str | int] = {
     'date': date.isoformat(),
-    'patient_id': str(patient_id),
     'name': str(patient_name),
     'age': int(patient_age),
     'sex': str(patient_sex),
@@ -77,15 +69,22 @@ patient_data: dict[str, str | int] = {
 if st.session_state.submitted:
     st.session_state.submitted = False
     try:
-        with st.spinner('Submitting patient information...'):
+        with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(
                 url=f'{FAST_API_BASE_URL}/api/patient',
                 json={
-                    'patient_data': patient_data
+                    'patient': patient
                 },
-
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
-        st.success('Patient information submitted successfully.')
-    except RequestException as e:
-        st.error(f'Error submitting patient information: {e}')
+            response.raise_for_status()
+
+        st.success('Patient information submitted successfully.', icon='✅')
+        time.sleep(2)
+        st.rerun()
+    except ConnectionError:
+        st.error('Connection error. Please check your FastAPI server.')
+    except HTTPError:
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error submitting patient information: {error_detail}')
+        st.stop()

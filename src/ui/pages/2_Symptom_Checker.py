@@ -50,7 +50,7 @@ with st.form('symptom_form'):
         col = cols[i % 5]
         col.checkbox(
             label=symptom,
-            key=f'symptom_{symptom}',
+            key=f'{symptom}_checkbox',
             help=definitions.get(symptom.replace(
                 ' ', '_').lower(), 'No definition available.')
         )
@@ -70,20 +70,24 @@ if submitted:
 if st.session_state.get('ready', False):
     st.session_state.ready = False
 
-    patient_symptoms = {
-        symptom.replace(' ', '_').lower(): st.session_state.get(f'symptom_{symptom}', False)
+    patient_symptoms: dict[str, dict[str, bool] | str] = {
+        symptom.replace(' ', '_').replace('/', '_').replace('-', '_').lower(): st.session_state.get(f'{symptom}_checkbox', False)
         for symptom in symptoms
     }
     try:
+        st.empty()
         with st.spinner('Submitting symptoms...'):
             response = requests.post(
                 url=f'{FAST_API_BASE_URL}/api/symptoms',
                 json={'patient_symptoms': patient_symptoms},
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
+            response.raise_for_status()
             st.success('Symptoms submitted successfully.')
             selected = [s.replace('_', ' ').title()
                         for s, v in patient_symptoms.items() if v]
             st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
     except RequestException as e:
-        st.error(f'Error submitting symptoms: {e}')
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error submitting symptoms. {error_detail}')
+        st.stop()

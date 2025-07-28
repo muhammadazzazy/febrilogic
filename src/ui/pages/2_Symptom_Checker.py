@@ -21,25 +21,20 @@ if 'symptom_checker_reset' not in st.session_state:
 if not st.session_state.loaded:
     try:
         with st.spinner('Loading symptoms and definitions...'):
-            symptoms_response = requests.get(f'{FAST_API_BASE_URL}/api/diseases-symptoms',
-                                             timeout=(FAST_API_CONNECT_TIMEOUT,
-                                                      FAST_API_READ_TIMEOUT))
-            definitions_response = requests.get(f'{FAST_API_BASE_URL}/api/definitions',
-                                                timeout=(FAST_API_CONNECT_TIMEOUT,
-                                                         FAST_API_READ_TIMEOUT))
-        st.success('Symptoms and definitions loaded successfully!')
+            response = requests.get(f'{FAST_API_BASE_URL}/api/symptom-definitions',
+                                    timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
+        st.success('Symptoms loaded successfully!')
         st.session_state.loaded = True
-        st.session_state.symptoms_response = symptoms_response
-        st.session_state.definitions_response = definitions_response
+        st.session_state.response = response
     except RequestException as e:
         st.error(f'Error fetching symptoms: {e}')
         st.stop()
 
 symptoms: list[str] = [symptom.replace('_', ' ').title()
-                       for symptom in st.session_state.symptoms_response.json().get('symptoms', [])]
+                       for symptom in st.session_state.response.json().get('symptom_definitions', {}).keys()]
 
-definitions: dict[str, str] = st.session_state.definitions_response.json().get(
-    'definitions', {})
+definitions: dict[str, str] = st.session_state.response.json().get(
+    'symptom_definitions', {})
 
 st.header('🩺 Symptom Checker')
 if 'symptom_states' not in st.session_state or st.session_state.symptom_checker_reset:
@@ -48,33 +43,46 @@ if 'symptom_states' not in st.session_state or st.session_state.symptom_checker_
     st.session_state.submitted = False
     st.session_state.symptom_checker_reset = True
 
-cols = st.columns(5)
-for i, symptom in enumerate(symptoms):
-    col = cols[i % 5]
-    st.session_state.symptom_states[symptom] = col.checkbox(
-        label=symptom,
-        value=st.session_state.symptom_states[symptom],
-        key=f'{symptom}',
-        help=f"{definitions.get(symptom.replace(' ', '_').lower(), 'No definition available.')}",
+
+with st.form('symptom_form'):
+    cols = st.columns(5, gap='small')
+    for i, symptom in enumerate(symptoms):
+        col = cols[i % 5]
+        col.checkbox(
+            label=symptom,
+            key=f'symptom_{symptom}',
+            help=definitions.get(symptom.replace(
+                ' ', '_').lower(), 'No definition available.')
+        )
+
+    btn_cols = st.columns(5, gap='medium')
+    submitted = btn_cols[-1].form_submit_button(
+        'Submit Symptoms',
+        use_container_width=True,
+        icon='✅'
     )
 
-if cols[4].button(label='Submit Symptoms', key='submit_symptoms', use_container_width=True, icon='✅'):
-    st.session_state.submitted = True
+if submitted:
+    st.session_state.ready = True
+    st.rerun()
 
 
-patient_symptoms: dict[str, bool] = {symptom.replace(
-    ' ', '_').lower(): st.session_state.symptom_states[symptom] for symptom in symptoms}
+if st.session_state.get('ready', False):
+    st.session_state.ready = False
 
-if st.session_state.submitted:
-    selected = [s for s, v in st.session_state.symptom_states.items() if v]
-    st.success(
-        f'Selected symptoms: {", ".join(selected) if selected else "None"}')
-    st.session_state.submitted = False
+    patient_symptoms = {
+        symptom.replace(' ', '_').lower(): st.session_state.get(f'symptom_{symptom}', False)
+        for symptom in symptoms
+    }
     try:
         response = requests.post(
             url=f'{FAST_API_BASE_URL}/api/symptoms',
             json={'patient_symptoms': patient_symptoms},
             timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
         )
+        st.success("✅ Symptoms submitted successfully.")
+        selected = [s.replace('_', ' ').title()
+                    for s, v in patient_symptoms.items() if v]
+        st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
     except RequestException as e:
         st.error(f'Error submitting symptoms: {e}')

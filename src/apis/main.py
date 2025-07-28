@@ -58,20 +58,22 @@ def get_symptoms() -> dict[str, Any]:
     }
 
 
-@api.get('/api/definitions')
+@api.get('/api/symptom-definitions')
 def get_definitions() -> dict[str, Any]:
     """Fetch symptom definitions from the corresponding public CSV file."""
     if not SYMPTOM_DEFINITIONS_FILE_PATH.exists():
         return {'error': 'Symptom definitions file not found.'}
     try:
-        definitions_df: DataFrame = pd.read_csv(
+        symptom_definitions: DataFrame = pd.read_csv(
             filepath_or_buffer=SYMPTOM_DEFINITIONS_FILE_PATH)
-        definitions_df['symptom'] = definitions_df['Symptoms'].astype(
+        symptom_definitions['symptom'] = symptom_definitions['Symptoms'].astype(
             str).str.strip()
-        definitions_df['definition'] = definitions_df['Definitions needed to be written'].astype(
+        symptom_definitions['definition'] = symptom_definitions['Definitions needed to be written'].astype(
             str).str.strip()
+        symptom_definitions.sort_values(by='symptom', inplace=True)
+        symptom_definitions.replace(to_replace='nan', value='', inplace=True)
         return {
-            'definitions': definitions_df.set_index('symptom').to_dict()['definition']
+            'symptom_definitions': symptom_definitions.set_index('symptom').to_dict()['definition']
         }
     except KeyError:
         return {'error': 'Invalid format in symptom definitions file.'}

@@ -75,14 +75,15 @@ if st.session_state.get('ready', False):
         for symptom in symptoms
     }
     try:
-        response = requests.post(
-            url=f'{FAST_API_BASE_URL}/api/symptoms',
-            json={'patient_symptoms': patient_symptoms},
-            timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
-        )
-        st.success("✅ Symptoms submitted successfully.")
-        selected = [s.replace('_', ' ').title()
-                    for s, v in patient_symptoms.items() if v]
-        st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
+        with st.spinner('Submitting symptoms...'):
+            response = requests.post(
+                url=f'{FAST_API_BASE_URL}/api/symptoms',
+                json={'patient_symptoms': patient_symptoms},
+                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+            )
+            st.success('Symptoms submitted successfully.')
+            selected = [s.replace('_', ' ').title()
+                        for s, v in patient_symptoms.items() if v]
+            st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
     except RequestException as e:
         st.error(f'Error submitting symptoms: {e}')

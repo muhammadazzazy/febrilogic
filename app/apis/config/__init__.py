@@ -21,7 +21,7 @@ SECRET_KEY: Final[str] = os.environ.get('SECRET_KEY')
 ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = int(
     os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
 
-DISEASE_BIOMARKER_FILE: Final[Path] = Path(
+DISEASE_BIOMARKER_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('DISEASE_BIOMARKER_FILE')
 )
 
@@ -32,6 +32,9 @@ SYMPTOM_DEFINITIONS_FILE: Final[Path] = BASE_DIR / Path(
 SYMPTOMS_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('SYMPTOMS_FILE')
 )
+
+LOINC_FILE: Final[Path] = BASE_DIR / Path(
+    os.environ.get('LOINC_FILE'))
 
 SQLALCHEMY_DATABASE_URL: Final[str] = 'sqlite:///' + \
     str(BASE_DIR / os.environ.get('DATABASE_FILE'))

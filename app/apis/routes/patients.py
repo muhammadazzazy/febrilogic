@@ -1,10 +1,11 @@
 """Upload patient personal data to the database"""
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from sqlalchemy.orm import Session
 
+from apis.routes.auth import get_current_user
 from apis.db.database import get_db
 from apis.models.patients import Patients
 from apis.models.symptoms import Symptoms
@@ -18,8 +19,12 @@ api_router: APIRouter = APIRouter(
 
 @api_router.post('')
 def upload_patient_data(create_patient_request: CreatePatientRequest,
+                        user: Annotated[dict, Depends(get_current_user)],
                         db: Session = Depends(get_db)) -> dict[str, Any]:
     """Upload patient personal information to the SQLite database."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
     patient_ids: list[int | None] = []
     patient_ids.append(
         db.query(Patients.id).order_by(Patients.id.desc()).limit(1).scalar()

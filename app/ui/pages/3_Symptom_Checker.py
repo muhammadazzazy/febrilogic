@@ -1,4 +1,4 @@
-"""Show Symptom Checker page for FebriDx."""
+"""Show Symptom Checker page for FebriLogic."""
 import time
 
 import requests
@@ -16,6 +16,8 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
+st.session_state.setdefault('token', '')
+
 st.session_state.setdefault('loaded', False)
 
 if 'symptom_checker_reset' not in st.session_state:
@@ -24,23 +26,32 @@ if 'symptom_checker_reset' not in st.session_state:
 if not st.session_state.loaded:
     try:
         with st.spinner('Loading symptoms and definitions...'):
-            response = requests.get(f'{FAST_API_BASE_URL}/api/symptoms/definitions',
+            response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
+                                    url=f'{FAST_API_BASE_URL}/api/symptoms/definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
+            response.raise_for_status()
         st.session_state.loaded = True
         message = st.empty()
         message.success('Symptoms loaded successfully!')
         time.sleep(1.5)
         message.empty()
         st.session_state.response = response
+    except HTTPError as e:
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error fetching symptoms: {error_detail}')
+        st.stop()
     except RequestException as e:
         st.error(f'Error fetching symptoms: {e}')
         st.stop()
 
-symptoms: list[str] = [symptom.replace('_', ' ').title()
-                       for symptom in st.session_state.response.json().get('symptom_definitions', {}).keys()]
-
-definitions: dict[str, str] = st.session_state.response.json().get(
-    'symptom_definitions', {})
+if st.session_state.get('response'):
+    symptoms: list[str] = [symptom.replace('_', ' ').title()
+                           for symptom in
+                           st.session_state.response.json().get('symptom_definitions', {}).keys()]
+    st.session_state.symptoms = symptoms
+    definitions: dict[str, str] = st.session_state.response.json().get(
+        'symptom_definitions', {})
+    st.session_state.definitions = definitions
 
 st.header('🩺 Symptom Checker')
 if 'symptom_states' not in st.session_state or st.session_state.symptom_checker_reset:
@@ -72,18 +83,19 @@ if submitted:
     st.session_state.ready = True
     st.rerun()
 
-
-if st.session_state.get('ready', False):
+symptoms: list[str] = st.session_state.get('symptoms', [])
+if st.session_state.get('ready', False) and symptoms:
     st.session_state.ready = False
-
     patient_symptoms: dict[str, dict[str, bool] | str] = {
-        symptom.replace(' ', '_').replace('/', '_').replace('-', '_').lower(): st.session_state.get(f'{symptom}_checkbox', False)
+        symptom.replace(' ', '_').replace('/', '_').replace('-', '_').lower():
+        st.session_state.get(f'{symptom}_checkbox', False)
         for symptom in symptoms
     }
     try:
         st.empty()
         with st.spinner('Submitting symptoms...'):
             response = requests.post(
+                headers={'Authorization': f'Bearer {st.session_state.token}'},
                 url=f'{FAST_API_BASE_URL}/api/symptoms',
                 json=patient_symptoms,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
@@ -94,7 +106,7 @@ if st.session_state.get('ready', False):
                     for s, v in patient_symptoms.items() if v]
         st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
         time.sleep(1.5)
-        st.switch_page('./pages/3_Biomarkers.py')
+        st.switch_page('./pages/4_Biomarkers.py')
     except requests.exceptions.ConnectionError:
         st.error('Connection error. Please check your FastAPI server.')
         st.stop()

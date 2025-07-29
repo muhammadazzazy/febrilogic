@@ -1,6 +1,6 @@
 """Fetch symptom definitions, symptoms, and diseases."""
 import csv
-from typing import Any
+from typing import Annotated, Any
 
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
@@ -13,6 +13,7 @@ from apis.db.database import get_db
 from apis.models.create_symptom_request import CreateSymptomRequest
 from apis.models.patients import Patients
 from apis.models.symptoms import Symptoms
+from apis.routes.auth import get_current_user
 
 api_router: APIRouter = APIRouter(
     prefix='/api/symptoms',
@@ -21,8 +22,11 @@ api_router: APIRouter = APIRouter(
 
 
 @api_router.get('-diseases')
-def get_symptoms() -> dict[str, Any]:
+def get_symptoms(user: Annotated[dict, Depends(get_current_user)]) -> dict[str, Any]:
     """Fetch symptoms and diseases from the API."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
     if not SYMPTOMS_FILE.exists():
         raise HTTPException(status_code=404,
                             detail='Symptoms file not found.')
@@ -46,8 +50,11 @@ def get_symptoms() -> dict[str, Any]:
 
 
 @api_router.get('/definitions')
-def get_definitions() -> dict[str, Any]:
+def get_definitions(user: Annotated[dict, Depends(get_current_user)]) -> dict[str, Any]:
     """Fetch symptom definitions from the corresponding public CSV file."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
     if not SYMPTOM_DEFINITIONS_FILE.exists():
         raise HTTPException(status_code=404,
                             detail='Symptom definitions file not found.')
@@ -71,8 +78,12 @@ def get_definitions() -> dict[str, Any]:
 
 @api_router.post('')
 def upload_patient_symptoms(create_symptom_request: CreateSymptomRequest,
+                            user: Annotated[dict, Depends(get_current_user)],
                             db: Session = Depends(get_db)) -> dict[str, Any]:
     """Upload patient symptoms to the database."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
     patient_ids: list[int | None] = []
     patient_ids.append(
         db.query(Patients.id).order_by(Patients.id.desc()).limit(1).scalar()

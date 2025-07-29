@@ -24,10 +24,13 @@ if 'symptom_checker_reset' not in st.session_state:
 if not st.session_state.loaded:
     try:
         with st.spinner('Loading symptoms and definitions...'):
-            response = requests.get(f'{FAST_API_BASE_URL}/api/symptom-definitions',
+            response = requests.get(f'{FAST_API_BASE_URL}/api/symptoms/definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
-        st.success('Symptoms loaded successfully!')
         st.session_state.loaded = True
+        message = st.empty()
+        message.success('Symptoms loaded successfully!')
+        time.sleep(1.5)
+        message.empty()
         st.session_state.response = response
     except RequestException as e:
         st.error(f'Error fetching symptoms: {e}')
@@ -82,7 +85,7 @@ if st.session_state.get('ready', False):
         with st.spinner('Submitting symptoms...'):
             response = requests.post(
                 url=f'{FAST_API_BASE_URL}/api/symptoms',
-                json={'patient_symptoms': patient_symptoms},
+                json=patient_symptoms,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()

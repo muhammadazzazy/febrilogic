@@ -1,0 +1,81 @@
+"""Authentication API for user management in FastAPI application."""
+from datetime import datetime, timedelta
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import jwt, JWTError
+from passlib.context import CryptContext
+from starlette import status
+from sqlalchemy.orm import Session
+
+
+from apis.config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
+    SECRET_KEY
+)
+
+from apis.db.database import get_db, SessionLocal
+
+from apis.models.create_user_request import CreateUserRequest
+from apis.models.token import Token
+from apis.models.users import Users
+
+api_router: APIRouter = APIRouter(
+    prefix='/auth',
+    tags=['auth'],
+)
+
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='token')
+
+bcrypt_context: CryptContext = CryptContext(schemes=['bcrypt'],
+                                            deprecated='auto')
+
+
+@api_router.post('/', status_code=status.HTTP_201_CREATED)
+async def create_user(create_user_request: CreateUserRequest,
+                      db: Session = Depends(get_db)):
+    """Create a new user in the database."""
+    create_user_model = Users(
+        username=create_user_request.username,
+        hashed_password=bcrypt_context.hash(create_user_request.password)
+    )
+    db.add(create_user_model)
+    db.commit()
+    return {'message': 'User created successfully.'}
+
+
+@api_router.post('/token', response_model=Token)
+async def login_for_access_token(
+        form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+        db: Session = Depends(get_db)):
+    """Authenticate user and return access token."""
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    token = create_access_token(user.username, user.id, timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+
+    return {'access_token': token, 'token_type': 'bearer'}
+
+
+def authenticate_user(db: Session, username: str, password: str) -> Users | None:
+    """Check if the user exists and the password is correct."""
+    user = db.query(Users).filter(Users.username == username).first()
+    if not user:
+        return None
+    if not bcrypt_context.verify(password, user.hashed_password):
+        return None
+    return user
+
+
+def create_access_token(username: str, user_id: int, expires_delta: timedelta | None = None) -> str:
+    """Create a JWT access token."""
+    encode = {'sub': username, 'id': user_id}
+    expires = datetime.now() + expires_delta
+    encode.update({'exp': expires})
+    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)

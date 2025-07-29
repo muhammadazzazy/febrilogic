@@ -31,11 +31,14 @@ with st.form('patient_info_form'):
     patient_age: int = columns[0].number_input(label='Age',
                                                min_value=0, max_value=120,
                                                key='patient_age', width='stretch', value=0)
-    patient_sex: str = columns[1].selectbox(label='Sex', options=['Male', 'Female'],
+    patient_sex: str = columns[1].selectbox(label='Sex', options=['Male', 'Female', 'Other'],
                                             key='patient_sex', index=0, width='stretch')
     race: str = columns[0].selectbox(label='Race',
-                                     options=['White', 'Black',
-                                              'Asian', 'Hispanic', 'Other'],
+                                     options=['American Indian or Alaska Native',
+                                              'Asian',
+                                              'Black or African American',
+                                              'Native Hawaiian or Other Pacific Islander',
+                                              'White', 'Other Race', 'Two or More Races'],
                                      key='patient_race', index=0, width='stretch')
     btn_cols = st.columns(5, gap='medium')
     submitted = btn_cols[-1].form_submit_button(
@@ -45,21 +48,9 @@ with st.form('patient_info_form'):
     )
 
 if submitted:
-    missing_fields = []
-    if patient_age is None:
-        missing_fields.append('Patient Age')
-
-    if not patient_sex:
-        missing_fields.append('Patient Sex')
-
-    if missing_fields:
-        st.error(f'Missing required fields: {", ".join(missing_fields)}')
-        st.stop()
-
     st.session_state.submitted = True
 
 patient: dict[str, str | int] = {
-    'date': date.isoformat(),
     'name': str(patient_name),
     'age': int(patient_age),
     'sex': str(patient_sex),
@@ -72,9 +63,7 @@ if st.session_state.submitted:
         with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(
                 url=f'{FAST_API_BASE_URL}/api/patient',
-                json={
-                    'patient': patient
-                },
+                json=patient,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()

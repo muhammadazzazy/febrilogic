@@ -1,0 +1,60 @@
+"""Encapsulate the request model for creating a new symptom record."""
+from pydantic import BaseModel
+
+
+class CreateSymptomRequest(BaseModel):
+    """Represent the request model for creating a new symptom record."""
+    abdominal_pains: bool
+    acholic_stool: bool
+    anorexia: bool
+    arthralgia: bool
+    back_pain: bool
+    blurred_vision: bool
+    bradycardia: bool
+    chest_pain: bool
+    chills_and_rigors: bool
+    choluria: bool
+    confusion_altered_mental_status: bool
+    constipation: bool
+    cough: bool
+    dehydration: bool
+    diarrhea: bool
+    dizziness: bool
+    dyspnea_wheezing_respiratorydistress: bool
+    edema: bool
+    eschar: bool
+    eye_symptoms_conjunctivitis_conjunctival_suffusion: bool
+    facial_redness: bool
+    fatigue: bool
+    headache: bool
+    hematemesis: bool
+    hematuria: bool
+    hemoptysis: bool
+    hemorrhage: bool
+    hepatomegaly: bool
+    itching: bool
+    jaundice: bool
+    lethargy_drowsiness: bool
+    lymphadenopathy: bool
+    lymphangitis: bool
+    melena: bool
+    mouth_ulcers: bool
+    mucosal_bleeding: bool
+    myalgia: bool
+    nausea: bool
+    oliguria: bool
+    petechia: bool
+    pneumonia: bool
+    positive_tourniquet_test: bool
+    prostration: bool
+    purpura: bool
+    rash: bool
+    retro_orbital_pain: bool
+    rhinorrhea: bool
+    seizures: bool
+    shock: bool
+    sore_throat: bool
+    splenomegaly: bool
+    tachycardia: bool
+    vomiting: bool
+    weakness_malaise: bool

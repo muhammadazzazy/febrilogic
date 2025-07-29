@@ -11,9 +11,9 @@ from fastapi import FastAPI, HTTPException
 from pandas import DataFrame
 
 from config import (
-    FAST_API_HOST, FAST_API_PORT, DISEASE_BIOMARKER_FILE_PATH,
-    PATIENT_DATABASE_FILE_PATH,
-    SYMPTOMS_FILE_PATH, SYMPTOM_DEFINITIONS_FILE_PATH,
+    FAST_API_HOST, FAST_API_PORT, DISEASE_BIOMARKER_FILE,
+    PATIENT_DATABASE_FILE, PATIENT_SCHEMA_FILE,
+    SYMPTOMS_FILE, SYMPTOM_DEFINITIONS_FILE,
 )
 
 from model.afi import (
@@ -25,11 +25,11 @@ from model.afi import (
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Initialize the FastAPI application and set up the database."""
-    create_schema: bool = not PATIENT_DATABASE_FILE_PATH.exists()
-    conn = sqlite3.connect(PATIENT_DATABASE_FILE_PATH)
+    create_schema: bool = not PATIENT_DATABASE_FILE.exists()
+    conn = sqlite3.connect(PATIENT_DATABASE_FILE)
     conn.execute('PRAGMA foreign_keys = ON')
     if create_schema:
-        with open('src/apis/sql/schema.sql', 'r', encoding='utf-8') as f:
+        with open(PATIENT_SCHEMA_FILE, 'r', encoding='utf-8') as f:
             conn.executescript(f.read())
         conn.commit()
     conn.close()
@@ -54,10 +54,10 @@ api.state.per_disease_stats = None
 @api.get('/api/diseases-symptoms')
 def get_symptoms() -> dict[str, Any]:
     """Fetch symptoms and diseases from the API."""
-    if not SYMPTOMS_FILE_PATH.exists():
+    if not SYMPTOMS_FILE.exists():
         raise HTTPException(status_code=404,
                             detail='Symptoms file not found.')
-    with open(file=SYMPTOMS_FILE_PATH, mode='r', newline='', encoding='utf-8') as f:
+    with open(file=SYMPTOMS_FILE, mode='r', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         diseases: dict[str, dict[str, float]] = {}
         symptoms: list[str] = []
@@ -79,12 +79,12 @@ def get_symptoms() -> dict[str, Any]:
 @api.get('/api/symptom-definitions')
 def get_definitions() -> dict[str, Any]:
     """Fetch symptom definitions from the corresponding public CSV file."""
-    if not SYMPTOM_DEFINITIONS_FILE_PATH.exists():
+    if not SYMPTOM_DEFINITIONS_FILE.exists():
         raise HTTPException(status_code=404,
                             detail='Symptom definitions file not found.')
     try:
         symptom_definitions: DataFrame = pd.read_csv(
-            filepath_or_buffer=SYMPTOM_DEFINITIONS_FILE_PATH)
+            filepath_or_buffer=SYMPTOM_DEFINITIONS_FILE)
         symptom_definitions['symptom'] = symptom_definitions['Symptoms'].astype(
             str).str.strip()
         symptom_definitions['definition'] = \
@@ -103,12 +103,12 @@ def get_definitions() -> dict[str, Any]:
 @api.get('/api/biomarkers')
 def get_biomarkers() -> dict[str, Any]:
     """Fetch biomarkers from the corresponding private CSV file."""
-    if not DISEASE_BIOMARKER_FILE_PATH.exists():
+    if not DISEASE_BIOMARKER_FILE.exists():
         raise HTTPException(status_code=404,
                             detail='Biomarker file not found.')
 
     biomarker_stats_df: DataFrame = pd.read_csv(
-        filepath_or_buffer=DISEASE_BIOMARKER_FILE_PATH)
+        filepath_or_buffer=DISEASE_BIOMARKER_FILE)
     biomarker_stats_df['disease'] = biomarker_stats_df['disease'].astype(
         str).str.strip()
 
@@ -124,7 +124,7 @@ def upload_patient_data(patient: dict[str, dict[str, Any]]) -> dict[str, Any]:
     if not patient.get('patient'):
         raise HTTPException(status_code=404, detail='Patient data not found.')
     api.state.patient_data.append(patient.get('patient', {}))
-    conn = sqlite3.connect(PATIENT_DATABASE_FILE_PATH)
+    conn = sqlite3.connect(PATIENT_DATABASE_FILE)
     cursor = conn.cursor()
     cursor.execute(
         'SELECT id FROM patients ORDER BY id DESC LIMIT 1'
@@ -140,8 +140,13 @@ def upload_patient_data(patient: dict[str, dict[str, Any]]) -> dict[str, Any]:
         if patient_ids[0][0] - patient_ids[1][0] != 0:
             raise HTTPException(
                 status_code=400,
-                detail='You must submit patient symptoms first.'
+                detail='No patient symptoms found. Please submit patient symptoms first.'
             )
+    if (patient_ids[0]) and (not patient_ids[1]):
+        raise HTTPException(
+            status_code=400,
+            detail='No patient symptoms found. Please submit patient symptoms first.'
+        )
     insert_query: str = 'INSERT INTO patients (name, age, sex, race, date) VALUES (?, ?, ?, ?, ?)'
     cursor.execute(
         insert_query,
@@ -163,7 +168,7 @@ def upload_symptoms(patient_symptoms: dict[str, dict[str, bool]]) -> dict[str, A
     """Load symptoms data for a patient."""
     if not patient_symptoms.get('patient_symptoms'):
         raise HTTPException(status_code=404, detail='Patient data not found.')
-    conn = sqlite3.connect(PATIENT_DATABASE_FILE_PATH)
+    conn = sqlite3.connect(PATIENT_DATABASE_FILE)
     cursor = conn.cursor()
     patient_ids: list[tuple[int | None]] = []
     cursor.execute(
@@ -178,17 +183,23 @@ def upload_symptoms(patient_symptoms: dict[str, dict[str, bool]]) -> dict[str, A
         if patient_ids[0][0] - patient_ids[1][0] != 1:
             raise HTTPException(
                 status_code=400,
-                detail='You must submit patient information first.'
+                detail='No patient information found. Please submit patient information first.'
             )
+    if not patient_ids[0]:
+        raise HTTPException(
+            status_code=400,
+            detail='No patient information found. Please submit patient information first.'
+        )
     num_of_symptoms: int = len(patient_symptoms['patient_symptoms'])
     num_of_fields: int = num_of_symptoms + 1
-    symptom_flags: list[bool] = [
-        flag for flag in patient_symptoms['patient_symptoms'].values()]
+    symptom_flags: list[bool] = list(
+        patient_symptoms['patient_symptoms'].values())
     question_marks: str = ','.join(['?'] * num_of_fields)
     insert_query: str = \
         f"""INSERT INTO symptoms (patient_id, {', '.join(
             patient_symptoms['patient_symptoms'].keys()
         )}) VALUES ({question_marks})"""
+
     cursor.execute(insert_query, (patient_ids[0][0], *symptom_flags))
     conn.commit()
     conn.close()

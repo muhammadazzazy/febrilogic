@@ -1,6 +1,9 @@
 """Show Symptom Checker page for FebriDx."""
+import time
+
 import requests
-from requests.exceptions import RequestException
+from requests.exceptions import HTTPError, RequestException
+
 
 import streamlit as st
 
@@ -57,9 +60,9 @@ with st.form('symptom_form'):
 
     btn_cols = st.columns(5, gap='medium')
     submitted = btn_cols[-1].form_submit_button(
-        'Submit Symptoms',
+        'Next',
         use_container_width=True,
-        icon='✅'
+        icon='➡️'
     )
 
 if submitted:
@@ -83,11 +86,16 @@ if st.session_state.get('ready', False):
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
-            st.success('Symptoms submitted successfully.')
-            selected = [s.replace('_', ' ').title()
-                        for s, v in patient_symptoms.items() if v]
-            st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
-    except RequestException as e:
+        st.success('Symptoms submitted successfully.', icon='✅')
+        selected = [s.replace('_', ' ').title()
+                    for s, v in patient_symptoms.items() if v]
+        st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
+        time.sleep(1.5)
+        st.switch_page('./pages/3_Biomarkers.py')
+    except requests.exceptions.ConnectionError:
+        st.error('Connection error. Please check your FastAPI server.')
+        st.stop()
+    except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
-        st.error(f'Error submitting symptoms. {error_detail}')
+        st.error(f'Error submitting symptoms: {error_detail}')
         st.stop()

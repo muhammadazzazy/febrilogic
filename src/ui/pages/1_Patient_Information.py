@@ -37,11 +37,11 @@ with st.form('patient_info_form'):
                                      options=['White', 'Black',
                                               'Asian', 'Hispanic', 'Other'],
                                      key='patient_race', index=0, width='stretch')
-    btn_cols = st.columns(3, gap='medium')
+    btn_cols = st.columns(5, gap='medium')
     submitted = btn_cols[-1].form_submit_button(
-        'Submit Patient Information',
+        label='Next',
         use_container_width=True,
-        icon='✅'
+        icon='➡️'
     )
 
 if submitted:
@@ -80,10 +80,11 @@ if st.session_state.submitted:
             response.raise_for_status()
 
         st.success('Patient information submitted successfully.', icon='✅')
-        time.sleep(2)
-        st.rerun()
-    except ConnectionError:
+        time.sleep(1.5)
+        st.switch_page('./pages/2_Symptom_Checker.py')
+    except requests.exceptions.ConnectionError:
         st.error('Connection error. Please check your FastAPI server.')
+        st.stop()
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
         st.error(f'Error submitting patient information: {error_detail}')

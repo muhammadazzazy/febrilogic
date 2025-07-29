@@ -19,6 +19,11 @@ st.set_page_config(
 
 st.session_state.setdefault('token', '')
 
+if not st.session_state.get('token', ''):
+    st.error('Please log in to access patient information.')
+    st.stop()
+
+
 st.header('ℹ️ Patient Information')
 if 'patient_info' not in st.session_state:
     st.session_state.submitted = False

@@ -20,6 +20,11 @@ st.session_state.setdefault('token', '')
 
 st.session_state.setdefault('loaded', False)
 
+if not st.session_state.get('token', ''):
+    st.error('Please log in to access symptoms.')
+    st.stop()
+
+
 if 'symptom_checker_reset' not in st.session_state:
     st.session_state.symptom_checker_reset = False
 

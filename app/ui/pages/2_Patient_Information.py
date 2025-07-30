@@ -1,6 +1,7 @@
 """Show Patient Information page for FebriLogic."""
 import time
 from datetime import datetime
+from typing import Final
 
 import requests
 from requests.exceptions import HTTPError
@@ -28,14 +29,16 @@ st.header('ℹ️ Patient Information')
 if 'patient_info' not in st.session_state:
     st.session_state.submitted = False
 
+PLACEHOLDER: Final[str] = 'Please select'
+
 cols = st.columns(6, gap='medium', border=False)
 if cols[-1].button(label='Reset',
                    use_container_width=True,
                    icon='🔄',):
     st.session_state.patient_name = ''
     st.session_state.patient_age = 0
-    st.session_state.patient_sex = 'Please Select'
-    st.session_state.patient_race = 'Please Select'
+    st.session_state.patient_sex = PLACEHOLDER
+    st.session_state.patient_race = PLACEHOLDER
     st.rerun()
 
 
@@ -48,12 +51,12 @@ with st.form('patient_info_form'):
                                               width='stretch')
     patient_age: int = columns[0].number_input(label='Age',
                                                min_value=0, max_value=120,
-                                               key='patient_age', width='stretch', value=0)
-    patient_sex: str = columns[1].selectbox(label='Sex', options=['Please Select', 'Male',
+                                               key='patient_age', width='stretch')
+    patient_sex: str = columns[1].selectbox(label='Sex', options=[PLACEHOLDER, 'Male',
                                                                   'Female', 'Other'],
                                             key='patient_sex', index=0, width='stretch')
     patient_race: str = columns[0].selectbox(label='Race',
-                                             options=['Please Select',
+                                             options=[PLACEHOLDER,
                                                       'American Indian or Alaska Native',
                                                       'Asian',
                                                       'Black or African American',
@@ -69,13 +72,12 @@ with st.form('patient_info_form'):
 
 if submitted:
     missing_fields: list[str] = []
-    if patient_sex == 'Please Select':
+    if patient_sex == PLACEHOLDER:
         missing_fields.append('Sex')
-    if patient_race == 'Please Select':
+    if patient_race == PLACEHOLDER:
         missing_fields.append('Race')
     if missing_fields:
         st.error(f'Missing fields: {", ".join(missing_fields)}')
-        time.sleep(1.5)
         st.stop()
     st.session_state.submitted = True
 

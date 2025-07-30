@@ -17,7 +17,7 @@ st.session_state.setdefault('token', '')
 st.session_state.setdefault('biomarkers_loaded', False)
 
 if not st.session_state.get('token', ''):
-    st.error('Please log in to access biomarkers.')
+    st.error('Please log in to access patient biomarkers.')
     st.stop()
 
 st.title('🔬 Biomarkers')

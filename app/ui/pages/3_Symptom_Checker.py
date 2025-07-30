@@ -18,24 +18,24 @@ st.set_page_config(
 
 st.session_state.setdefault('token', '')
 
-st.session_state.setdefault('loaded', False)
+st.session_state.setdefault('symptoms_loaded', False)
 
 if not st.session_state.get('token', ''):
-    st.error('Please log in to access symptoms.')
+    st.error('Please log in to access patient symptoms.')
     st.stop()
 
 
 if 'symptom_checker_reset' not in st.session_state:
     st.session_state.symptom_checker_reset = False
 
-if not st.session_state.loaded:
+if not st.session_state.symptoms_loaded:
     try:
         with st.spinner('Loading symptoms and definitions...'):
             response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
                                     url=f'{FAST_API_BASE_URL}/api/symptoms/definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
-        st.session_state.loaded = True
+        st.session_state.symptoms_loaded = True
         message = st.empty()
         message.success('Symptoms loaded successfully!')
         time.sleep(1.5)

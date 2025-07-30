@@ -17,6 +17,9 @@ st.set_page_config(
 
 st.title('🔑 Login')
 
+if 'token' in st.session_state:
+    del st.session_state['token']
+
 st.session_state.setdefault('token', '')
 
 st.session_state.setdefault('submitted', False)
@@ -51,7 +54,7 @@ if st.session_state.get('submitted', False):
         cols[1].error(
             f'Please fill in the following fields: {", ".join(missing_fields)}'
         )
-        time.sleep(1.5)
+        time.sleep(2)
         st.rerun()
     else:
         st.session_state.ready = True
@@ -62,12 +65,14 @@ if st.session_state.ready:
     st.session_state.ready = False
     cols = st.columns(3, gap='large', border=False)
     try:
-        response = requests.post(f'{FAST_API_BASE_URL}/auth/token',
-                                 timeout=(FAST_API_CONNECT_TIMEOUT,
-                                          FAST_API_READ_TIMEOUT),
-                                 data={'username': st.session_state.get('username', ''),
-                                       'password': st.session_state.get('password', '')})
-        response.raise_for_status()
+        with cols[1]:
+            with st.spinner('Logging in...'):
+                response = requests.post(f'{FAST_API_BASE_URL}/auth/token',
+                                         timeout=(FAST_API_CONNECT_TIMEOUT,
+                                                  FAST_API_READ_TIMEOUT),
+                                         data={'username': st.session_state.get('username', ''),
+                                               'password': st.session_state.get('password', '')})
+                response.raise_for_status()
         cols[1].success('Login successful!')
         time.sleep(1.5)
         st.session_state.token = response.json().get('access_token', '')

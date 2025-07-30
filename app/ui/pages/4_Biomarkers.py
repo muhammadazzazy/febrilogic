@@ -24,27 +24,28 @@ st.title('🔬 Biomarkers')
 
 if not st.session_state.biomarkers_loaded:
     try:
-        response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
-                                url=f'{FAST_API_BASE_URL}/api/biomarkers',
-                                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
-        response.raise_for_status()
-        biomarkers: list[str] = list(
-            response.json().get('biomarkers', [])[0].keys())[1:]
-        unique_biomarkers: set[str] = set()
-        for biomarker in biomarkers:
-            biomarker = biomarker.replace('_', ' ').replace(
-                'sd', '').replace('mean', '').replace('pooled', '').strip()
-            unique_biomarkers.add(biomarker)
-        biomarkers: list[str] = sorted(unique_biomarkers)
-        response = requests.get(json=biomarkers,
-                                headers={
-                                    'Authorization': f'Bearer {st.session_state.token}'},
-                                url=f'{FAST_API_BASE_URL}/api/biomarkers/units',
-                                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
-        response.raise_for_status()
-        biomarker_units = response.json().get('biomarker_units', {})
-        st.session_state.biomarker_units = biomarker_units
-        st.session_state.biomarkers_loaded = True
+        with st.spinner('Loading biomarkers and units...'):
+            response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
+                                    url=f'{FAST_API_BASE_URL}/api/biomarkers',
+                                    timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
+            response.raise_for_status()
+            biomarkers: list[str] = list(
+                response.json().get('biomarkers', [])[0].keys())[1:]
+            unique_biomarkers: set[str] = set()
+            for biomarker in biomarkers:
+                biomarker = biomarker.replace('_', ' ').replace(
+                    'sd', '').replace('mean', '').replace('pooled', '').strip()
+                unique_biomarkers.add(biomarker)
+            biomarkers: list[str] = sorted(unique_biomarkers)
+            response = requests.get(json=biomarkers,
+                                    headers={
+                                        'Authorization': f'Bearer {st.session_state.token}'},
+                                    url=f'{FAST_API_BASE_URL}/api/biomarkers/units',
+                                    timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
+            response.raise_for_status()
+            biomarker_units = response.json().get('biomarker_units', {})
+            st.session_state.biomarker_units = biomarker_units
+            st.session_state.biomarkers_loaded = True
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
         st.error(f'Error fetching biomarkers: {error_detail}')
@@ -84,3 +85,7 @@ with st.form('biomarker_form', clear_on_submit=True):
         use_container_width=True,
         icon='➡️'
     )
+
+
+if submitted:
+    st.session_state.submitted = True

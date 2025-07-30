@@ -4,7 +4,6 @@ import time
 import requests
 from requests.exceptions import HTTPError, RequestException
 
-
 import streamlit as st
 
 from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
@@ -98,7 +97,7 @@ if st.session_state.get('ready', False) and symptoms:
     }
     try:
         st.empty()
-        with st.spinner('Submitting symptoms...'):
+        with st.spinner('Submitting patient symptoms...'):
             response = requests.post(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
                 url=f'{FAST_API_BASE_URL}/api/symptoms',

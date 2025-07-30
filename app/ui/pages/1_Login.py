@@ -66,7 +66,7 @@ if st.session_state.ready:
     cols = st.columns(3, gap='large', border=False)
     try:
         with cols[1]:
-            with st.spinner('Logging in...'):
+            with st.spinner('Logging in...', show_time=True):
                 response = requests.post(f'{FAST_API_BASE_URL}/auth/token',
                                          timeout=(FAST_API_CONNECT_TIMEOUT,
                                                   FAST_API_READ_TIMEOUT),

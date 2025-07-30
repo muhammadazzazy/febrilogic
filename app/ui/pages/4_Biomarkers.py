@@ -24,7 +24,7 @@ st.title('🔬 Biomarkers')
 
 if not st.session_state.biomarkers_loaded:
     try:
-        with st.spinner('Loading biomarkers and units...'):
+        with st.spinner('Loading biomarkers and units...', show_time=True):
             response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
                                     url=f'{FAST_API_BASE_URL}/api/biomarkers',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))

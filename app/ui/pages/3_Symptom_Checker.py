@@ -29,7 +29,7 @@ if 'symptom_checker_reset' not in st.session_state:
 
 if not st.session_state.symptoms_loaded:
     try:
-        with st.spinner('Loading symptoms and definitions...'):
+        with st.spinner('Loading symptoms and definitions...', show_time=True):
             response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
                                     url=f'{FAST_API_BASE_URL}/api/symptoms/definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
@@ -97,7 +97,7 @@ if st.session_state.get('ready', False) and symptoms:
     }
     try:
         st.empty()
-        with st.spinner('Submitting patient symptoms...'):
+        with st.spinner('Submitting patient symptoms...', show_time=True):
             response = requests.post(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
                 url=f'{FAST_API_BASE_URL}/api/symptoms',

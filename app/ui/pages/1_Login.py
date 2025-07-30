@@ -73,10 +73,18 @@ if st.session_state.ready:
                                          data={'username': st.session_state.get('username', ''),
                                                'password': st.session_state.get('password', '')})
                 response.raise_for_status()
-        cols[1].success('Login successful!')
-        time.sleep(1.5)
-        st.session_state.token = response.json().get('access_token', '')
-        st.session_state.logged_in = True
+                st.session_state.token = response.json().get('access_token', '')
+                response = requests.get(f'{FAST_API_BASE_URL}/auth/id',
+                                        timeout=(FAST_API_CONNECT_TIMEOUT,
+                                                 FAST_API_READ_TIMEOUT),
+                                        headers={
+                                            'Authorization': f'Bearer {st.session_state.token}'},
+                                        data={'username': st.session_state.get('username', '')})
+                response.raise_for_status()
+                st.session_state.user_id = response.json().get('user_id', None)
+            cols[1].success('Login successful!')
+            time.sleep(1.5)
+
         st.switch_page('./pages/2_Patient_Information.py')
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')

@@ -69,12 +69,13 @@ with st.form('biomarker_form', clear_on_submit=True):
             format='%.2f',
             width='stretch'
         )
+        units.insert(0, 'Please select')
         if not units:
             units = ['No units']
         count += 1
         cols[count % 4].selectbox(
             key=f'{biomarker}_unit',
-            label='Units',
+            label=f'{biomarker} Units',
             options=units,
             index=0
         )

@@ -1,13 +1,14 @@
+"""Contain APIs for interacting with biomarkers."""
 import re
 from typing import Annotated, Any
 
+import pdfplumber
 from fastapi import APIRouter, Depends, HTTPException
 import pandas as pd
 from pandas import DataFrame
 
-from apis.config import DISEASE_BIOMARKER_FILE
+from apis.config import BIOMARKER_REFERENCE_RANGES_FILE, DISEASE_BIOMARKER_FILE, LOINC_FILE
 from apis.routes.auth import get_current_user
-from apis.config import LOINC_FILE
 
 api_router: APIRouter = APIRouter(
     prefix='/api/biomarkers',

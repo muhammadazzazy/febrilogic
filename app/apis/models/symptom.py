@@ -4,7 +4,7 @@ from sqlalchemy import Boolean, Column, Integer
 from apis.db.database import Base
 
 
-class Symptoms(Base):
+class Symptom(Base):
     """Stores patient symptoms in the database."""
     __tablename__ = 'symptoms'
 

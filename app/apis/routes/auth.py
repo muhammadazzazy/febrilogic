@@ -16,11 +16,11 @@ from apis.config import (
     SECRET_KEY
 )
 
-from apis.db.database import get_db, SessionLocal
+from apis.db.database import get_db
 
-from apis.models.create_user_request import CreateUserRequest
+from apis.models.user_request import UserRequest
 from apis.models.token import Token
-from apis.models.users import Users
+from apis.models.user_patient import User
 
 api_router: APIRouter = APIRouter(
     prefix='/auth',
@@ -50,9 +50,9 @@ async def login_for_access_token(
     return {'access_token': token, 'token_type': 'bearer'}
 
 
-def authenticate_user(db: Session, username: str, password: str) -> Users | None:
+def authenticate_user(db: Session, username: str, password: str) -> User | None:
     """Check if the user exists and the password is correct."""
-    user = db.query(Users).filter(Users.username == username).first()
+    user = db.query(User).filter(User.username == username).first()
     if not user:
         return None
     if not bcrypt_context.verify(password, user.hashed_password):
@@ -89,7 +89,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         ) from e
 
 
-def require_admin(user: Users = Depends(get_current_user)):
+def require_admin(user: User = Depends(get_current_user)):
     """Ensure the user has admin privileges."""
     print(f"Authenticated user: {user['username']}, role: {user['role']}")
     if user.get('role') != 'admin':
@@ -99,26 +99,43 @@ def require_admin(user: Users = Depends(get_current_user)):
 
 
 @api_router.post('/', status_code=status.HTTP_201_CREATED)
-async def create_user(create_user_request: CreateUserRequest,
-                      user: Annotated[Users, Depends(require_admin)],
+async def create_user(user_request: UserRequest,
+                      user: Annotated[User, Depends(require_admin)],
                       db: Session = Depends(get_db)):
     """Create a new user in the database."""
-    existing_user = db.query(Users).filter(
-        Users.username == create_user_request.username).first()
+    existing_user = db.query(User).filter(
+        User.username == user_request.username).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'User {create_user_request.username} already exists.'
+            detail=f'User {user_request.username} already exists.'
         )
 
-    create_user_model = Users(
-        role=create_user_request.role,
-        username=create_user_request.username,
-        hashed_password=bcrypt_context.hash(create_user_request.password),
+    user_model = User(
+        role=user_request.role,
+        username=user_request.username,
+        hashed_password=bcrypt_context.hash(user_request.password),
     )
-    db.add(create_user_model)
+    db.add(user_model)
     db.commit()
     return {
         'message':
-        f"User {create_user_request.username} with role {create_user_request.role} created by admin {user['username']}."
+        f"User {user_request.username} with role {user_request.role} created by admin {user['username']}."
+    }
+
+
+@api_router.get('/id')
+def get_user_id(user: Annotated[User, Depends(get_current_user)],
+                db: Session = Depends(get_db)) -> dict[str, int]:
+    """Get the user ID based on the authenticated user."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
+    user_id: int = db.query(User).filter(
+        User.username == user['username']).first().id
+    if not user_id:
+        raise HTTPException(status_code=404,
+                            detail='User not found.')
+    return {
+        'user_id': user_id
     }

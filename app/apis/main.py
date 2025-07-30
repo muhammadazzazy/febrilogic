@@ -20,7 +20,7 @@ from apis.tools.afi_model import (
     expand_disease_probabilities, get_updated_probs
 )
 
-from apis.models.users import Base
+from apis.db.database import Base
 
 
 @asynccontextmanager

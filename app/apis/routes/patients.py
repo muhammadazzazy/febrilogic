@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from apis.routes.auth import get_current_user
 from apis.db.database import get_db
-from apis.models.patients import Patients
-from apis.models.symptoms import Symptoms
-from apis.models.create_patient_request import CreatePatientRequest
+from apis.models.user_patient import Patient
+from apis.models.symptom import Symptom
+from apis.models.patient_request import PatientRequest
 
 
 api_router: APIRouter = APIRouter(
@@ -18,7 +18,7 @@ api_router: APIRouter = APIRouter(
 
 
 @api_router.post('')
-def upload_patient_data(create_patient_request: CreatePatientRequest,
+def upload_patient_data(patient_request: PatientRequest,
                         user: Annotated[dict, Depends(get_current_user)],
                         db: Session = Depends(get_db)) -> dict[str, Any]:
     """Upload patient personal information to the SQLite database."""
@@ -27,10 +27,10 @@ def upload_patient_data(create_patient_request: CreatePatientRequest,
                             detail='Authentication failed.')
     patient_ids: list[int | None] = []
     patient_ids.append(
-        db.query(Patients.id).order_by(Patients.id.desc()).limit(1).scalar()
+        db.query(Patient.id).order_by(Patient.id.desc()).limit(1).scalar()
     )
-    patient_ids.append(db.query(Symptoms.patient_id).order_by(
-        Symptoms.patient_id.desc()).limit(1).scalar())
+    patient_ids.append(db.query(Symptom.patient_id).order_by(
+        Symptom.patient_id.desc()).limit(1).scalar())
     if (patient_ids[0]) and (patient_ids[1]):
         if patient_ids[0] - patient_ids[1] != 0:
             raise HTTPException(
@@ -42,16 +42,74 @@ def upload_patient_data(create_patient_request: CreatePatientRequest,
             status_code=400,
             detail='No patient symptoms found. Please submit patient symptoms first.'
         )
-    create_patient_model = Patients(
-        name=create_patient_request.name,
-        age=create_patient_request.age,
-        race=create_patient_request.race,
-        sex=create_patient_request.sex
+    patient = Patient(
+        age=patient_request.age,
+        city=patient_request.city,
+        country=patient_request.country,
+        race=patient_request.race,
+        sex=patient_request.sex,
+        user_id=patient_request.user_id
     )
-    db.add(create_patient_model)
+    db.add(patient)
     db.commit()
-    db.refresh(create_patient_model)
+    db.refresh(patient)
     return {
         'message': 'Patient data uploaded successfully.',
-        'patient_id': create_patient_model.id
+        'patient_id': patient.id
+    }
+
+
+@api_router.get('')
+def get_patient_info(user: Annotated[dict, Depends(get_current_user)],
+                     db: Session = Depends(get_db)) -> dict[str, list[dict[str, Any]]]:
+    """Get patient information based on the authenticated user."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
+    patients = db.query(Patient).filter(Patient.user_id == user['id'])
+    if not patients:
+        raise HTTPException(status_code=404,
+                            detail='No patients found.')
+    patients_list: list[dict[str, Any]] = []
+    for patient in patients:
+        patients_list.append({
+            'age': patient.age,
+            'city': patient.city,
+            'country': patient.country,
+            'id': patient.id,
+            'race': patient.race,
+            'sex': patient.sex
+        })
+    return {
+        'patients': patients_list
+    }
+
+
+@api_router.post('/{patient_id}')
+def update_patient_info(patient_id: int,
+                        patient_request: PatientRequest,
+                        user: Annotated[dict, Depends(get_current_user)],
+                        db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Update patient information in the database."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
+    patient = db.query(Patient).filter(Patient.id == patient_id,
+                                       Patient.user_id == user['id']).first()
+    if not patient:
+        raise HTTPException(status_code=403,
+                            detail='Not enough permissions to update this patient.')
+    patient = db.query(Patient).filter(
+        Patient.id == patient_id,
+        Patient.user_id == user['id']
+    ).first()
+    patient.age = patient_request.age
+    patient.city = patient_request.city
+    patient.country = patient_request.country
+    patient.race = patient_request.race
+    patient.sex = patient_request.sex
+    db.commit()
+    return {
+        'message': 'Patient information updated successfully.',
+        'patient_id': patient_id
     }

@@ -105,7 +105,7 @@ if st.session_state.get('ready', False) and symptoms:
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
-        st.success('Symptoms submitted successfully.', icon='✅')
+        st.success('Patient symptoms submitted successfully.', icon='✅')
         selected = [s.replace('_', ' ').title()
                     for s, v in patient_symptoms.items() if v]
         st.info(f"Selected: {', '.join(selected) if selected else 'None'}")

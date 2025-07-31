@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 import pandas as pd
 from pandas import DataFrame
 
-from apis.config import BIOMARKER_REFERENCE_RANGES_FILE, DISEASE_BIOMARKER_FILE, LOINC_FILE
+from apis.config import DISEASE_BIOMARKER_FILE, LOINC_FILE
 from apis.routes.auth import get_current_user
 
 api_router: APIRouter = APIRouter(

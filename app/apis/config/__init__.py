@@ -25,10 +25,6 @@ DISEASE_BIOMARKER_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('DISEASE_BIOMARKER_FILE')
 )
 
-SYMPTOM_DEFINITIONS_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('SYMPTOM_DEFINITIONS_FILE')
-)
-
 SYMPTOMS_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('SYMPTOMS_FILE')
 )

@@ -20,7 +20,7 @@ from apis.db.database import get_db
 
 from apis.models.user_request import UserRequest
 from apis.models.token import Token
-from apis.models.user_patient import User
+from apis.models.model import User
 
 api_router: APIRouter = APIRouter(
     prefix='/auth',

@@ -7,10 +7,8 @@ from sqlalchemy.orm import Session
 
 from apis.routes.auth import get_current_user
 from apis.db.database import get_db
-from apis.models.user_patient import Patient
-from apis.models.symptom import Symptom
+from apis.models.model import Patient, patient_symptoms
 from apis.models.patient_request import PatientRequest
-
 
 api_router: APIRouter = APIRouter(
     prefix='/api/patient'
@@ -29,8 +27,8 @@ def upload_patient_data(patient_request: PatientRequest,
     patient_ids.append(
         db.query(Patient.id).order_by(Patient.id.desc()).limit(1).scalar()
     )
-    patient_ids.append(db.query(Symptom.patient_id).order_by(
-        Symptom.patient_id.desc()).limit(1).scalar())
+    patient_ids.append(db.query(patient_symptoms.c.patient_id).order_by(
+        db.query(patient_symptoms.c.patient_id.desc())).limit(1).scalar())
     if (patient_ids[0]) and (patient_ids[1]):
         if patient_ids[0] - patient_ids[1] != 0:
             raise HTTPException(

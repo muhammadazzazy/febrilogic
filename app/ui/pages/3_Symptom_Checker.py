@@ -29,11 +29,13 @@ if 'symptom_checker_reset' not in st.session_state:
 
 if not st.session_state.symptoms_loaded:
     try:
-        with st.spinner('Loading symptoms and definitions...', show_time=True):
+        with st.spinner('Loading symptoms...', show_time=True):
             response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
-                                    url=f'{FAST_API_BASE_URL}/api/symptoms/definitions',
+                                    url=f'{FAST_API_BASE_URL}/api/symptoms/categories-definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
+        st.session_state.category_symptom_definition = response.json().get(
+            'category_symptom_definition', {})
         st.session_state.symptoms_loaded = True
         message = st.empty()
         message.success('Symptoms loaded successfully!')
@@ -48,33 +50,27 @@ if not st.session_state.symptoms_loaded:
         st.error(f'Error fetching symptoms: {e}')
         st.stop()
 
-if st.session_state.get('response'):
-    symptoms: list[str] = [symptom.replace('_', ' ').title()
-                           for symptom in
-                           st.session_state.response.json().get('symptom_definitions', {}).keys()]
-    st.session_state.symptoms = symptoms
-    definitions: dict[str, str] = st.session_state.response.json().get(
-        'symptom_definitions', {})
-    st.session_state.definitions = definitions
-
 st.header('🩺 Symptom Checker')
-if 'symptom_states' not in st.session_state or st.session_state.symptom_checker_reset:
-    st.session_state.symptom_states = {
-        symptom: False for symptom in symptoms}
-    st.session_state.submitted = False
-    st.session_state.symptom_checker_reset = True
 
+category_symptom_definition = st.session_state.get(
+    'category_symptom_definition', {}
+)
 
 with st.form('symptom_form'):
-    cols = st.columns(5, gap='small')
-    for i, symptom in enumerate(symptoms):
-        col = cols[i % 5]
-        col.checkbox(
-            label=symptom,
-            key=f'{symptom}_checkbox',
-            help=definitions.get(symptom.replace(
-                ' ', '_').lower(), 'No definition available.')
-        )
+    total_cols = st.columns(3, gap='medium', border=False)
+    i: int = 0
+    for category, symptoms in category_symptom_definition.items():
+        with total_cols[i % 3]:
+            category_col = st.columns(1, gap='medium', border=True)
+            with category_col[0]:
+                st.markdown(f'#### {category}')
+                for symptom in symptoms:
+                    st.checkbox(
+                        label=symptom[0].replace('_', ' ').title(),
+                        key=f'{symptom[0]}_checkbox',
+                        help=symptom[1]
+                    )
+        i += 1
 
     btn_cols = st.columns(5, gap='medium')
     submitted = btn_cols[-1].form_submit_button(
@@ -87,13 +83,27 @@ if submitted:
     st.session_state.ready = True
     st.rerun()
 
-symptoms: list[str] = st.session_state.get('symptoms', [])
-if st.session_state.get('ready', False) and symptoms:
+
+category_symptom_definition = st.session_state.get(
+    'category_symptom_definition', {}
+)
+
+symptom_names: list[str] = [
+    symptom[0] for _, symptoms in category_symptom_definition.items()
+    for symptom in symptoms if st.session_state.get(f'{symptom[0]}_checkbox', False)
+]
+
+ticked_symptoms: list[str] = []
+
+for symptom in symptom_names:
+    if st.session_state.get(f'{symptom}_checkbox', False):
+        ticked_symptoms.append(symptom)
+
+if st.session_state.get('ready', False):
     st.session_state.ready = False
-    patient_symptoms: dict[str, dict[str, bool] | str] = {
-        symptom.replace(' ', '_').replace('/', '_').replace('-', '_').lower():
-        st.session_state.get(f'{symptom}_checkbox', False)
-        for symptom in symptoms
+    symptom_request: dict[str, dict[str, list[str]]] = {
+        'patient_id': st.session_state.get('patient_id', 0),
+        'symptom_names': ticked_symptoms
     }
     try:
         st.empty()
@@ -101,13 +111,13 @@ if st.session_state.get('ready', False) and symptoms:
             response = requests.post(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
                 url=f'{FAST_API_BASE_URL}/api/symptoms',
-                json=patient_symptoms,
+                json=symptom_request,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
         st.success('Patient symptoms submitted successfully.', icon='✅')
         selected = [s.replace('_', ' ').title()
-                    for s, v in patient_symptoms.items() if v]
+                    for s, v in symptom_request.items() if v]
         st.info(f"Selected: {', '.join(selected) if selected else 'None'}")
         time.sleep(1.5)
         st.switch_page('./pages/4_Biomarkers.py')

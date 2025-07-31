@@ -26,7 +26,7 @@ if not st.session_state.get('token', ''):
     st.session_state.patients_loaded = False
     st.session_state.patients = []
     st.session_state.countries = []
-    st.session_state.patient_id = 'New patient'
+    st.session_state.patient_id = 0
     st.session_state.patient_name = ''
     st.session_state.patient_age = 0
     st.session_state.patient_sex = ''
@@ -90,6 +90,9 @@ patient_ids: list[int] = [patient['id']
 
 st.session_state.patient_id = cols[0].selectbox(label='Select patient',
                                                       options=['New patient'] + patient_ids)
+if st.session_state.patient_id == 'New patient':
+    st.session_state.patient_id = 0
+
 
 patient_id = st.session_state.patient_id
 patients = st.session_state.patients
@@ -189,7 +192,7 @@ if st.session_state.submitted:
         'user_id': st.session_state.user_id
     }
     url: str = f'{FAST_API_BASE_URL}/api/patient'
-    if st.session_state.patient_id != 'New patient':
+    if st.session_state.patient_id != 0:
         if patients[patient_id-1]['age'] != patient_age \
                 or patients[patient_id-1]['country'] != patient_country \
                 or patients[patient_id-1]['race'] != patient_race \
@@ -198,7 +201,8 @@ if st.session_state.submitted:
             url: str = f'{FAST_API_BASE_URL}/api/patient/{patient_id}'
         else:
             st.warning('No changes detected in patient information.')
-            st.rerun()
+            time.sleep(1.5)
+            st.switch_page('./pages/3_Symptom_Checker.py')
     try:
         with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(

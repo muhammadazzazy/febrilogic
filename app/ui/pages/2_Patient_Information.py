@@ -20,6 +20,7 @@ st.set_page_config(
 
 st.session_state.setdefault('token', '')
 st.session_state.setdefault('patients_loaded', False)
+st.session_state.setdefault('countries_loaded', False)
 
 if not st.session_state.get('token', ''):
     st.error('Please log in to access patient information.')
@@ -27,7 +28,6 @@ if not st.session_state.get('token', ''):
     st.session_state.patients = []
     st.session_state.countries = []
     st.session_state.patient_id = 0
-    st.session_state.patient_name = ''
     st.session_state.patient_age = 0
     st.session_state.patient_sex = ''
     st.session_state.patient_race = ''
@@ -47,7 +47,8 @@ if not st.session_state.get('patients_loaded', False):
         try:
             response = requests.get(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
-                url=f'{FAST_API_BASE_URL}/api/patient'
+                url=f'{FAST_API_BASE_URL}/api/patient',
+                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
             st.session_state.patients = response.json().get('patients', [])
@@ -65,7 +66,9 @@ if not st.session_state.get('countries_loaded', False):
     with st.spinner('Loading country information...', show_time=True):
         try:
             response = requests.get(
-                "https://restcountries.com/v3.1/all?fields=name")
+                'https://restcountries.com/v3.1/all?fields=name',
+                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+            )
             response.raise_for_status()
             st.session_state.countries = sorted([
                 country['name']['common']
@@ -99,7 +102,7 @@ patients = st.session_state.patients
 last_patient_id = st.session_state.get('last_patient_id', None)
 if patient_id != last_patient_id:
     st.session_state.last_patient_id = patient_id
-    if patient_id == 'New patient':
+    if patient_id == 0:
         st.session_state.patient_age = 0
         st.session_state.patient_country = PLACEHOLDER
         st.session_state.patient_city = ''
@@ -124,12 +127,12 @@ if cols[5].button(
     use_container_width=True,
     icon='🔄'
 ):
-    st.session_state.patient_name = ''
     st.session_state.patient_age = 0
     st.session_state.patient_sex = PLACEHOLDER
     st.session_state.patient_race = PLACEHOLDER
     st.session_state.patient_country = PLACEHOLDER
     st.session_state.patient_city = ''
+    st.session_state.submitted = False
 
 countries = st.session_state.get('countries', [])
 with st.form('patient_info_form'):
@@ -141,7 +144,8 @@ with st.form('patient_info_form'):
                                                 key='patient_country',
                                                 options=[
                                                     PLACEHOLDER] + countries,
-                                                width='stretch')
+                                                width='stretch',
+                                                label_visibility='visible')
     patient_sex: str = columns[0].selectbox(label='Sex', options=[PLACEHOLDER, 'Male',
                                                                   'Female', 'Other'],
                                             key='patient_sex', index=0, width='stretch')
@@ -178,9 +182,11 @@ if submitted:
         st.error(f'Missing fields: {", ".join(missing_fields)}')
         st.stop()
     st.session_state.submitted = True
+    st.session_state.patients_loaded = False
 
 
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
+patient_id: int = st.session_state.get('patient_id', 0)
 if st.session_state.submitted:
     st.session_state.submitted = False
     body: dict[str, str | int] = {
@@ -188,17 +194,19 @@ if st.session_state.submitted:
         'city': str(patient_city),
         'country': str(patient_country),
         'race': str(patient_race),
-        'sex': str(patient_sex),
-        'user_id': st.session_state.user_id
+        'sex': str(patient_sex)
     }
     url: str = f'{FAST_API_BASE_URL}/api/patient'
-    if st.session_state.patient_id != 0:
-        if patients[patient_id-1]['age'] != patient_age \
-                or patients[patient_id-1]['country'] != patient_country \
-                or patients[patient_id-1]['race'] != patient_race \
-                or patients[patient_id-1]['sex'] != patient_sex:
+    current_patient = next(
+        (patient for patient in patients if patient['id'] == patient_id), None)
+    if current_patient:
+        if int(current_patient['age']) != int(patient_age) \
+                or current_patient['city'] != patient_city \
+                or current_patient['country'] != patient_country \
+                or current_patient['race'] != patient_race \
+                or current_patient['sex'] != patient_sex:
             body['id'] = int(patient_id)
-            url: str = f'{FAST_API_BASE_URL}/api/patient/{patient_id}'
+            url += f'/{patient_id}'
         else:
             st.warning('No changes detected in patient information.')
             time.sleep(1.5)
@@ -212,7 +220,6 @@ if st.session_state.submitted:
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
-        st.session_state.patients_loaded = False
         st.success('Patient information submitted successfully.', icon='✅')
         time.sleep(1.5)
         st.switch_page('./pages/3_Symptom_Checker.py')

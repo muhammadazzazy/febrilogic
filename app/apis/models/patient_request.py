@@ -9,4 +9,3 @@ class PatientRequest(BaseModel):
     country: str
     race: str
     sex: str
-    user_id: int

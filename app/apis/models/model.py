@@ -21,8 +21,11 @@ class User(Base):
 patient_symptoms = Table(
     'patient_symptoms',
     Base.metadata,
-    Column('patient_id', ForeignKey('patients.id'), primary_key=True),
-    Column('symptom_id', ForeignKey('symptoms.id'), primary_key=True)
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('patient_id', ForeignKey('patients.id')),
+    Column('symptom_id', ForeignKey('symptoms.id')),
+    Column('created_at', DateTime(timezone=True),
+           server_default=func.now())
 )
 
 

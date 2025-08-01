@@ -23,7 +23,6 @@ if 'token' in st.session_state:
 st.session_state.setdefault('token', '')
 
 st.session_state.setdefault('submitted', False)
-st.session_state.setdefault('ready', False)
 
 cols = st.columns(3, gap='large', border=False)
 
@@ -35,15 +34,14 @@ with cols[1].form('login_form', clear_on_submit=True, ):
     with cols[0]:
         st.text_input('Password', key='password', type='password',
                       placeholder='Enter your password')
-    if cols[0].form_submit_button(
+    submitted = cols[0].form_submit_button(
         label='Login',
         use_container_width=True,
         icon='🔐'
-    ):
-        st.session_state.submitted = True
+    )
 
-if st.session_state.get('submitted', False):
-    st.session_state.submitted = False
+if submitted:
+    st.session_state.submitted = True
     missing_fields: list[str] = []
     if not st.session_state.get('username', '').strip():
         missing_fields.append('Username')
@@ -56,13 +54,9 @@ if st.session_state.get('submitted', False):
         )
         time.sleep(2)
         st.rerun()
-    else:
-        st.session_state.ready = True
 
-
-if st.session_state.ready:
+if st.session_state.submitted:
     st.session_state.submitted = False
-    st.session_state.ready = False
     cols = st.columns(3, gap='large', border=False)
     try:
         with cols[1]:
@@ -81,10 +75,8 @@ if st.session_state.ready:
                                             'Authorization': f'Bearer {st.session_state.token}'},
                                         data={'username': st.session_state.get('username', '')})
                 response.raise_for_status()
-                st.session_state.user_id = response.json().get('user_id', None)
             cols[1].success('Login successful!')
             time.sleep(1.5)
-
         st.switch_page('./pages/2_Patient_Information.py')
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')

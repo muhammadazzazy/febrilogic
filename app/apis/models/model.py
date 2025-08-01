@@ -1,7 +1,7 @@
 """Encapsulate the database models for the FebriLogic backend."""
 from typing import List
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -11,9 +11,13 @@ from apis.db.database import Base
 class User(Base):
     """Represent users table in the database."""
     __tablename__ = 'users'
-    id = Column(Integer, primary_key=True, index=True)
-    role = Column(String, nullable=False)
-    username = Column(String, unique=True, nullable=False)
+    id = Column(Integer, primary_key=True, index=True,
+                autoincrement=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    verification_code = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True),
+                        server_default=func.now())
     hashed_password = Column(String, nullable=False)
     patients: Mapped[List['Patient']] = relationship(back_populates='user')
 

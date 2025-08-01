@@ -1,9 +1,12 @@
 """Authentication API for user management in FastAPI application."""
 from datetime import datetime, timedelta
 from typing import Annotated
+from uuid import uuid4
 
+import resend
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jinja2 import Template
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from starlette import status
@@ -13,7 +16,9 @@ from sqlalchemy.orm import Session
 from apis.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
-    SECRET_KEY
+    SECRET_KEY,
+    RESEND_API_KEY,
+    VERIFICATION_EMAIL_TEMPLATE
 )
 
 from apis.db.database import get_db
@@ -21,6 +26,8 @@ from apis.db.database import get_db
 from apis.models.user_request import UserRequest
 from apis.models.token import Token
 from apis.models.model import User
+
+resend.api_key = RESEND_API_KEY
 
 api_router: APIRouter = APIRouter(
     prefix='/auth',
@@ -42,17 +49,22 @@ async def login_for_access_token(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
         )
-    token = create_access_token(user.username, user.id, user.role, timedelta(
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User is not verified",
+        )
+    token = create_access_token(user.email, user.id, timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 
     return {'access_token': token, 'token_type': 'bearer'}
 
 
-def authenticate_user(db: Session, username: str, password: str) -> User | None:
+def authenticate_user(db: Session, email: str, password: str) -> User | None:
     """Check if the user exists and the password is correct."""
-    user = db.query(User).filter(User.username == username).first()
+    user = db.query(User).filter(User.email == email).first()
     if not user:
         return None
     if not bcrypt_context.verify(password, user.hashed_password):
@@ -60,10 +72,9 @@ def authenticate_user(db: Session, username: str, password: str) -> User | None:
     return user
 
 
-def create_access_token(username: str, user_id: int,
-                        role: str, expires_delta: timedelta | None = None) -> str:
+def create_access_token(email: str, user_id: int, expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token."""
-    encode = {'sub': username, 'id': user_id, 'role': role}
+    encode = {'sub': email, 'id': user_id}
     expires = datetime.now() + expires_delta
     encode.update({'exp': expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -73,15 +84,14 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
     """Get the current user from the access token."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get('sub')
+        email: str = payload.get('sub')
         user_id: int = payload.get('id')
-        user_role: str = payload.get('role')
-        if username is None or user_id is None:
+        if email is None or user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Could not validate user.',
             )
-        return {'username': username, 'id': user_id, 'role': user_role}
+        return {'email': email, 'id': user_id}
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,53 +99,64 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         ) from e
 
 
-def require_admin(user: User = Depends(get_current_user)):
-    """Ensure the user has admin privileges."""
-    print(f"Authenticated user: {user['username']}, role: {user['role']}")
-    if user.get('role') != 'admin':
-        raise HTTPException(status_code=403,
-                            detail='Not enough permissions to access this resource.')
-    return user
-
-
 @api_router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_user(user_request: UserRequest,
-                      user: Annotated[User, Depends(require_admin)],
                       db: Session = Depends(get_db)):
     """Create a new user in the database."""
     existing_user = db.query(User).filter(
-        User.username == user_request.username).first()
-    if existing_user:
+        User.email == user_request.email).first()
+    if existing_user and existing_user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'User {user_request.username} already exists.'
+            detail=f'User with verified email {user_request.email} already exists.'
         )
+    if not existing_user:
+        verification_code: str = str(uuid4())
+        user_model = User(
+            email=user_request.email,
+            hashed_password=bcrypt_context.hash(user_request.password),
+            is_verified=False,
+            verification_code=verification_code
+        )
+        db.add(user_model)
+        db.commit()
+    if existing_user and not existing_user.is_verified:
+        verification_code: str = existing_user.verification_code
+        send_verification_email(
+            user_request.email, verification_code
+        )
+    return {
+        'message': f'Verification link sent to your email: {user_request.email}'
+    }
 
-    user_model = User(
-        role=user_request.role,
-        username=user_request.username,
-        hashed_password=bcrypt_context.hash(user_request.password),
-    )
-    db.add(user_model)
+
+@api_router.get('/verify/{verification_code}')
+def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[str, str]:
+    """Verify a user based on the verification code."""
+    user = db.query(User).filter(
+        User.verification_code == verification_code).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found.'
+        )
+    user.is_verified = True
+    user.verification_code = None
     db.commit()
     return {
-        'message':
-        f"User {user_request.username} with role {user_request.role} created by admin {user['username']}."
+        'message': f'{user.email} verified successfully.'
     }
 
 
-@api_router.get('/id')
-def get_user_id(user: Annotated[User, Depends(get_current_user)],
-                db: Session = Depends(get_db)) -> dict[str, int]:
-    """Get the user ID based on the authenticated user."""
-    if user is None:
-        raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
-    user_id: int = db.query(User).filter(
-        User.username == user['username']).first().id
-    if not user_id:
-        raise HTTPException(status_code=404,
-                            detail='User not found.')
-    return {
-        'user_id': user_id
+def send_verification_email(to_email: str, verification_code: str) -> None:
+    """Send a verification email to the user."""
+    with open(VERIFICATION_EMAIL_TEMPLATE, encoding='utf-8') as file:
+        template = Template(file.read())
+    html = template.render(verification_code=verification_code)
+    params: resend.Emails.SendParams = {
+        "from": "FebriLogic <noreply@febrilogic.com>",
+        "to": [to_email],
+        "subject": "Verify your email",
+        "html": html
     }
+    _email: resend.Email = resend.Emails.send(params)

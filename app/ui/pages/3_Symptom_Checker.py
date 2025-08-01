@@ -28,6 +28,8 @@ if 'symptom_checker_reset' not in st.session_state:
     st.session_state.symptom_checker_reset = False
 
 
+patient_ids: list[int] = st.session_state.get('patient_ids', [])
+
 st.header('🩺 Symptom Checker')
 
 if not st.session_state.get('symptoms_loaded', False):
@@ -64,8 +66,8 @@ patient_ids: list[str] = [str(patient['id'])
 
 
 cols = st.columns(5, gap='large', border=False)
-st.session_state.patient_id = int(cols[4].selectbox(
-    label='Select Patient',
+st.session_state.patient_id = int(cols[0].selectbox(
+    label='Select patient',
     options=patient_ids,
 ))
 

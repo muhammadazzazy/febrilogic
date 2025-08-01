@@ -23,6 +23,7 @@ def upload_patient_data(patient_request: PatientRequest,
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
+    print(f'User: {user.items()}')
     patient_ids: list[int | None] = []
     patient_ids.append(
         db.query(Patient.id).order_by(Patient.id.desc()).limit(1).scalar()
@@ -46,7 +47,7 @@ def upload_patient_data(patient_request: PatientRequest,
         country=patient_request.country,
         race=patient_request.race,
         sex=patient_request.sex,
-        user_id=patient_request.user_id
+        user_id=user['id']
     )
     db.add(patient)
     db.commit()

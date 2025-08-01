@@ -66,15 +66,12 @@ if not st.session_state.get('countries_loaded', False):
     with st.spinner('Loading country information...', show_time=True):
         try:
             response = requests.get(
-                'https://restcountries.com/v3.1/all?fields=name',
+                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                url=f'{FAST_API_BASE_URL}/api/countries',
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
-            st.session_state.countries = sorted([
-                country['name']['common']
-                for country in response.json()
-                if 'name' in country and 'common' in country['name']
-            ])
+            st.session_state.countries = response.json().get('countries', [])
             st.session_state.countries_loaded = True
         except HTTPError:
             error_detail = response.json().get('detail', 'Unknown error')
@@ -171,7 +168,6 @@ with st.form('patient_info_form'):
         icon='➡️'
     )
 
-
 if submitted:
     missing_fields: list[str] = []
     if patient_country == PLACEHOLDER:
@@ -181,14 +177,14 @@ if submitted:
     if missing_fields:
         st.error(f'Missing fields: {", ".join(missing_fields)}')
         st.stop()
-    st.session_state.submitted = True
-    st.session_state.patients_loaded = False
+    st.session_state.ready = True
 
 
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
 patient_id: int = st.session_state.get('patient_id', 0)
-if st.session_state.submitted:
-    st.session_state.submitted = False
+if st.session_state.get('ready', False):
+    st.session_state.ready = False
+    st.session_state.patients_loaded = False
     body: dict[str, str | int] = {
         'age': int(patient_age),
         'city': str(patient_city),

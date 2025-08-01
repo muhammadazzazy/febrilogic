@@ -57,7 +57,7 @@ if st.session_state.get('login', False):
         cols[1].error(
             f'Please fill in the following fields: {", ".join(missing_fields)}'
         )
-        time.sleep(0.5)
+        time.sleep(2)
         st.rerun()
 
 if st.session_state.get('login', False):
@@ -74,7 +74,7 @@ if st.session_state.get('login', False):
                 response.raise_for_status()
                 st.session_state.token = response.json().get('access_token', '')
             cols[1].success('Login successful!')
-            time.sleep(1.5)
+            time.sleep(2)
         st.switch_page('./pages/2_Patient_Information.py')
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
@@ -82,6 +82,20 @@ if st.session_state.get('login', False):
     except requests.exceptions.RequestException as e:
         st.error(f"Error connecting to the server: {e}")
 
+if st.session_state.get('register', False):
+    st.session_state.login = True
+    missing_fields: list[str] = []
+    if not st.session_state.get('email', '').strip():
+        missing_fields.append('Email')
+    if not st.session_state.get('password', '').strip():
+        missing_fields.append('Password')
+    cols = st.columns(3, gap='large', border=False)
+    if missing_fields:
+        cols[1].error(
+            f'Please fill in the following fields: {", ".join(missing_fields)}'
+        )
+        time.sleep(2)
+        st.rerun()
 
 if st.session_state.get('register', False):
     st.session_state.register = False

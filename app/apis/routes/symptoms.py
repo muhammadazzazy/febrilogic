@@ -78,17 +78,17 @@ def upload_patient_symptoms(symptom_request: SymptomRequest,
     )
     patient_ids.append(symptom_request.patient_id)
     print(patient_ids)
-    if patient_ids[0] and patient_ids[1]:
-        if patient_ids[0] - patient_ids[1] != 0:
-            raise HTTPException(
-                status_code=400,
-                detail='No patient information found. Please submit patient information first.'
-            )
-    if not patient_ids[0]:
-        raise HTTPException(
-            status_code=400,
-            detail='No patient information found. Please submit patient information first.'
-        )
+    # if patient_ids[0] and patient_ids[1]:
+    #     if patient_ids[0] - patient_ids[1] != 0:
+    #         raise HTTPException(
+    #             status_code=400,
+    #             detail='No patient information found. Please submit patient information first.'
+    #         )
+    # if not patient_ids[0]:
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail='No patient information found. Please submit patient information first.'
+    #     )
     symptom_names = symptom_request.symptom_names
     symptoms: list[int] = db.query(Symptom.id).filter(
         Symptom.name.in_(symptom_names)

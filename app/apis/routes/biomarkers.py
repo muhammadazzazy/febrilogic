@@ -55,9 +55,9 @@ def get_biomarker_units(biomarkers: list[str],
             biomarker_clean, na=False)]
         if not matches.empty:
             units = matches['EXAMPLE_UCUM_UNITS'].dropna().unique().tolist()
-            biomarker_units[biomarker] = units if units else ['No units']
+            biomarker_units[biomarker] = units if units else []
         else:
-            biomarker_units[biomarker] = ['No units']
+            biomarker_units[biomarker] = []
     invalid_patterns: list[str] = [
         r"\{.*?\}",
         r"[a-zA-Z]*score",
@@ -72,6 +72,6 @@ def get_biomarker_units(biomarkers: list[str],
         if valid_units:
             biomarker_units[biomarker] = valid_units
         else:
-            biomarker_units[biomarker] = ['Invalid unit']
+            biomarker_units[biomarker] = []
     return {'biomarker_units':
             biomarker_units}

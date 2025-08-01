@@ -57,18 +57,19 @@ if not st.session_state.biomarkers_loaded:
 biomarker_units: dict[str, list[str]
                       ] = st.session_state.get('biomarker_units', {})
 
-cols = st.columns(4, gap='large', border=True)
 checkboxes: dict[str, bool] = {}
-i: int = 0
+
 for biomarker, units in biomarker_units.items():
-    checkboxes[f'{biomarker}'] = cols[i % 4].checkbox(
-        label=biomarker,
-        key=f'{biomarker}_checkbox',
-        value=False,
-        help=f'Check if {biomarker} is recorded.'
-    )
+    with st.container():
+        row = st.columns([1, 2, 3], gap='medium', border=False)
+        checkboxes[f'{biomarker}'] = row[0].checkbox(
+            label=biomarker,
+            key=f'{biomarker}_checkbox',
+            value=False,
+            help=f'Check if {biomarker} is recorded.'
+        )
     if checkboxes[f'{biomarker}']:
-        cols[i % 4].number_input(
+        row[1].number_input(
             label='Value',
             key=f'{biomarker}_value',
             min_value=0.0,
@@ -76,16 +77,16 @@ for biomarker, units in biomarker_units.items():
             format='%.2f',
             width='stretch'
         )
-        units.insert(0, 'Please select')
         if not units:
-            units = ['No units']
-        cols[i % 4].selectbox(
+            options = ['No units available']
+        else:
+            options = ['Please select'] + sorted(units)
+        row[2].selectbox(
             key=f'{biomarker}_unit',
             label=f'{biomarker} Units',
-            options=units,
+            options=options,
             index=0
         )
-    i += 1
 btn_cols = st.columns(5, gap='medium')
 submitted = btn_cols[-1].button(
     label='Next',

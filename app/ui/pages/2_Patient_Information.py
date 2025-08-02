@@ -86,7 +86,10 @@ PLACEHOLDER: Final[str] = 'Please select'
 cols = st.columns(6, gap='medium', border=False)
 
 patient_ids: list[int] = [patient['id']
-                          for patient in st.session_state.patients]
+                          for patient in
+                          st.session_state.patients]
+
+st.session_state.patient_ids = patient_ids
 
 st.session_state.patient_id = cols[0].selectbox(label='Select patient',
                                                       options=['New patient'] + patient_ids)

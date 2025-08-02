@@ -1,7 +1,7 @@
 """Encapsulate the database models for the FebriLogic backend."""
 from typing import List
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -84,3 +84,23 @@ class Category(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, nullable=False)
     symptoms: Mapped[List[Symptom]] = relationship(back_populates='category')
+
+
+class Biomarker(Base):
+    """Store biomarker information in the database."""
+    __tablename__ = 'biomarkers'
+    id = Column(Integer, primary_key=True, auto_increment=True, index=True)
+    name = Column(String, nullable=False)
+    unit = Column(String, nullable=False)
+
+
+patient_biomarkers = Table(
+    'patient_biomarkers',
+    Base.metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('patient_id', ForeignKey('patients.id')),
+    Column('biomarker_id', ForeignKey('biomarkers.id')),
+    Column('value', Float, nullable=False),
+    Column('created_at', DateTime(timezone=True),
+           server_default=func.now())
+)

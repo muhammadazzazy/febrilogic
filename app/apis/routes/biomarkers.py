@@ -2,7 +2,6 @@
 import re
 from typing import Annotated, Any
 
-import pdfplumber
 from fastapi import APIRouter, Depends, HTTPException
 import pandas as pd
 from pandas import DataFrame

@@ -23,10 +23,6 @@ if not st.session_state.get('token', ''):
     st.error('Please log in to access patient symptoms.')
     st.stop()
 
-
-if 'symptom_checker_reset' not in st.session_state:
-    st.session_state.symptom_checker_reset = False
-
 st.header('🩺 Symptom Checker')
 
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
@@ -45,7 +41,6 @@ if patient_ids:
     ))
 else:
     st.error('No patients available. Please add a patient first.')
-    st.session_state.symptom_checker_reset = True
     st.stop()
 
 

@@ -22,6 +22,12 @@ st.title('🧪 Disease Specific Tests')
 
 st.session_state.setdefault('diseases_loaded', False)
 
+if not st.session_state.get('patient_ids', []):
+    st.error('No patients found. Please add a patient first.')
+    st.session_state.diseases_loaded = False
+    st.session_state.diseases = []
+    st.stop()
+
 st.markdown(
     '##### Has the selected patient had any disease-specific tests that returned negative results?'
 )

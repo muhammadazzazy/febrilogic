@@ -22,10 +22,6 @@ SECRET_KEY: Final[str] = os.environ.get('SECRET_KEY')
 ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = int(
     os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
 
-DISEASE_BIOMARKER_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('DISEASE_BIOMARKER_FILE')
-)
-
 SYMPTOMS_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('SYMPTOMS_FILE')
 )
@@ -43,3 +39,7 @@ VERIFICATION_EMAIL_TEMPLATE: Final[Path] = APIS_DIR / Path(
 
 COUNTRIES_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('COUNTRIES_FILE'))
+
+
+RESEND_MAX_RETRIES: Final[int] = int(
+    os.environ.get('RESEND_MAX_RETRIES', 3))

@@ -16,8 +16,9 @@ from sqlalchemy.orm import Session
 from apis.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
-    SECRET_KEY,
     RESEND_API_KEY,
+    RESEND_MAX_RETRIES,
+    SECRET_KEY,
     VERIFICATION_EMAIL_TEMPLATE
 )
 
@@ -108,7 +109,7 @@ async def create_user(user_request: UserRequest,
     if existing_user and existing_user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'User with verified email {user_request.email} already exists.'
+            detail=f'User with email {user_request.email} already exists.'
         )
     if not existing_user:
         verification_code: str = str(uuid4())
@@ -159,4 +160,13 @@ def send_verification_email(to_email: str, verification_code: str) -> None:
         "subject": "Verify your email",
         "html": html
     }
-    _email: resend.Email = resend.Emails.send(params)
+    for _i in range(RESEND_MAX_RETRIES):
+        email: resend.Email = resend.Emails.send(params)
+        if email:
+            return {
+                'message': f"Verification email {email['id']} sent to {to_email}"
+            }
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f'Failed to send verification email to {to_email} after {RESEND_MAX_RETRIES} attempts.'
+    )

@@ -62,6 +62,21 @@ cols[0].selectbox(label='Select patient',
                   key='patient_id',
                   options=st.session_state.get('patient_ids'))
 
+
+def reset_button() -> None:
+    """Reset the biomarker checkboxes."""
+    for biomarker_name in biomarker_names:
+        st.session_state[f'{biomarker_name}_checkbox'] = False
+
+
+cols[4].button(
+    label='Reset',
+    icon='🔄',
+    key='biomarkers_reset',
+    use_container_width=True,
+    on_click=reset_button
+)
+
 biomarker_reference_ranges: dict[str, str] = {
     biomarker['abbreviation']:
     biomarker['reference_range'] + ' ' +
@@ -73,6 +88,7 @@ biomarker_names: dict[str, str] = {
     biomarker['abbreviation']: biomarker.get('name', '')
     for biomarker in biomarkers
 }
+
 
 for biomarker, unit in biomarker_units.items():
     with st.container():

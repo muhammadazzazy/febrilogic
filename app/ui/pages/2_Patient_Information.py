@@ -220,6 +220,14 @@ if st.session_state.get('ready', False):
             )
             response.raise_for_status()
         st.success('Patient information submitted successfully.', icon='✅')
+        patient_id: int = response.json().get('patient_id')
+        if patient_id not in st.session_state.patient_ids:
+            st.session_state.patients.append({
+                'id': patient_id,
+                'age': patient_age,
+                'city': patient_city,
+                'country': patient_country
+            })
         time.sleep(1.5)
         st.switch_page('./pages/3_Disease_Specific_Tests.py')
     except requests.exceptions.ConnectionError:

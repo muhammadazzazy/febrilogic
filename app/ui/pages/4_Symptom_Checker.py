@@ -48,6 +48,21 @@ else:
     st.session_state.symptom_checker_reset = True
     st.stop()
 
+
+def reset_button() -> None:
+    """Reset the symptom checkboxes."""
+    for symptom_name in symptom_names:
+        st.session_state[f'{symptom_name}_checkbox'] = False
+
+
+cols[4].button(
+    label='Reset',
+    key='symptom_checker_reset',
+    icon='🔄',
+    on_click=reset_button,
+    use_container_width=True
+)
+
 if not st.session_state.get('symptoms_loaded', False):
     try:
         with st.spinner('Loading symptom metadata...', show_time=True):
@@ -74,7 +89,7 @@ category_symptom_definition = st.session_state.get(
     'category_symptom_definition', {}
 )
 
-with st.form('symptom_form'):
+with st.container(key='symptom_checker_container', border=True):
     total_cols = st.columns(3, gap='medium', border=False)
     i: int = 0
     for category, symptoms in category_symptom_definition.items():
@@ -91,7 +106,7 @@ with st.form('symptom_form'):
         i += 1
 
     btn_cols = st.columns(5, gap='medium')
-    submitted = btn_cols[-1].form_submit_button(
+    submitted = btn_cols[-1].button(
         'Next',
         use_container_width=True,
         icon='➡️'

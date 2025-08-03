@@ -89,9 +89,11 @@ class Category(Base):
 class Biomarker(Base):
     """Store biomarker information in the database."""
     __tablename__ = 'biomarkers'
-    id = Column(Integer, primary_key=True, auto_increment=True, index=True)
-    name = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    abbreviation = Column(String, nullable=False)
+    name = Column(String, nullable=True)
     unit = Column(String, nullable=False)
+    reference_range = Column(String, nullable=False)
 
 
 patient_biomarkers = Table(

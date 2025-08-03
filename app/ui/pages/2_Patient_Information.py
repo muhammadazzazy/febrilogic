@@ -184,7 +184,7 @@ if submitted:
 
 
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
-patient_id: int = st.session_state.get('patient_id', 0)
+patient_id: int = st.session_state.get('patient_id')
 if st.session_state.get('ready', False):
     st.session_state.ready = False
     st.session_state.patients_loaded = False
@@ -209,7 +209,7 @@ if st.session_state.get('ready', False):
         else:
             st.warning('No changes detected in patient information.')
             time.sleep(1.5)
-            st.switch_page('./pages/3_Symptom_Checker.py')
+            st.switch_page('./pages/4_Symptom_Checker.py')
     try:
         with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(
@@ -221,7 +221,7 @@ if st.session_state.get('ready', False):
             response.raise_for_status()
         st.success('Patient information submitted successfully.', icon='✅')
         time.sleep(1.5)
-        st.switch_page('./pages/3_Symptom_Checker.py')
+        st.switch_page('./pages/4_Symptom_Checker.py')
     except requests.exceptions.ConnectionError:
         st.error('Connection error. Please check your FastAPI server.')
         st.stop()

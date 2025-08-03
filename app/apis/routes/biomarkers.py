@@ -4,10 +4,12 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 import pandas as pd
-from pandas import DataFrame
 
-from apis.config import DISEASE_BIOMARKER_FILE, LOINC_FILE
+from apis.config import LOINC_FILE
+from apis.db.database import Session, get_db
 from apis.routes.auth import get_current_user
+from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
+from apis.models.model import Biomarker, patient_biomarkers
 
 api_router: APIRouter = APIRouter(
     prefix='/api/biomarkers',
@@ -16,21 +18,21 @@ api_router: APIRouter = APIRouter(
 
 
 @api_router.get('')
-def get_biomarkers(user: Annotated[dict, Depends(get_current_user)]) -> dict[str, Any]:
-    """Fetch biomarkers from the corresponding private CSV file."""
+def get_biomarkers(user: Annotated[dict, Depends(get_current_user)],
+                   db: Session = Depends(get_db)) -> dict[str, list[dict[str, str]]]:
+    """Fetch all biomarkers from the database."""
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
-    if not DISEASE_BIOMARKER_FILE.exists():
-        raise HTTPException(status_code=404,
-                            detail='Biomarker file not found.')
-
-    biomarker_stats_df: DataFrame = pd.read_csv(
-        filepath_or_buffer=DISEASE_BIOMARKER_FILE)
-    biomarker_stats_df['disease'] = biomarker_stats_df['disease'].astype(
-        str).str.strip()
+    results: list[Biomarker] = db.query(Biomarker).all()
+    biomarkers: list[dict[str, str]] = [{
+        'abbreviation': result.abbreviation,
+        'name': result.name,
+        'unit': result.unit,
+        'reference_range': result.reference_range
+    } for result in results]
     return {
-        'biomarkers': biomarker_stats_df.to_dict(orient='records'),
+        'biomarkers': biomarkers
     }
 
 
@@ -74,3 +76,37 @@ def get_biomarker_units(biomarkers: list[str],
             biomarker_units[biomarker] = []
     return {'biomarker_units':
             biomarker_units}
+
+
+@api_router.post('')
+def upload_patient_biomarkers(
+    patient_biomarkers_request: PatientBiomarkersRequest,
+    user: Annotated[dict, Depends(get_current_user)],
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """Upload patient biomarkers to the database."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed.')
+    patient_id = patient_biomarkers_request.patient_id
+    biomarker_values: dict[str,
+                           float] = patient_biomarkers_request.biomarker_values
+
+    data: list = []
+    for biomarker, value in biomarker_values.items():
+        db_biomarker = db.query(Biomarker).filter(
+            Biomarker.abbreviation == biomarker).first()
+        if db_biomarker is None:
+            raise HTTPException(status_code=404,
+                                detail=f'{biomarker} biomarker not found.')
+        data.append({
+            'patient_id': patient_id,
+            'biomarker_id': db_biomarker.id,
+            'value': value
+        })
+    db.execute(patient_biomarkers.insert(), data)
+    db.commit()
+    return {
+        'patient_id': patient_id,
+        'message': 'Patient biomarkers uploaded successfully.'
+    }

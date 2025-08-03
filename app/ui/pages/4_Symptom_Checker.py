@@ -27,10 +27,25 @@ if not st.session_state.get('token', ''):
 if 'symptom_checker_reset' not in st.session_state:
     st.session_state.symptom_checker_reset = False
 
-
-patient_ids: list[int] = st.session_state.get('patient_ids', [])
-
 st.header('🩺 Symptom Checker')
+
+patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
+
+patient_ids: list[str] = [str(patient['id'])
+                          for patient in patients if patient.get('id')]
+
+
+cols = st.columns(5, gap='large', border=False)
+
+if patient_ids:
+    st.session_state.patient_id = int(cols[0].selectbox(
+        label='Select patient',
+        options=patient_ids,
+    ))
+else:
+    st.error('No patients available. Please add a patient first.')
+    st.session_state.symptom_checker_reset = True
+    st.stop()
 
 if not st.session_state.get('symptoms_loaded', False):
     try:
@@ -58,18 +73,6 @@ if not st.session_state.get('symptoms_loaded', False):
 category_symptom_definition = st.session_state.get(
     'category_symptom_definition', {}
 )
-
-patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
-
-patient_ids: list[str] = [str(patient['id'])
-                          for patient in patients if patient.get('id')]
-
-
-cols = st.columns(5, gap='large', border=False)
-st.session_state.patient_id = int(cols[0].selectbox(
-    label='Select patient',
-    options=patient_ids,
-))
 
 with st.form('symptom_form'):
     total_cols = st.columns(3, gap='medium', border=False)
@@ -117,7 +120,7 @@ for symptom in symptom_names:
 if st.session_state.get('ready', False):
     st.session_state.ready = False
     symptom_request: dict[str, dict[str, list[str]]] = {
-        'patient_id': st.session_state.get('patient_id', 0),
+        'patient_id': st.session_state.get('patient_id'),
         'symptom_names': ticked_symptoms
     }
     try:
@@ -132,7 +135,7 @@ if st.session_state.get('ready', False):
             response.raise_for_status()
         st.success('Patient symptoms submitted successfully.', icon='✅')
         time.sleep(1.5)
-        st.switch_page('./pages/4_Biomarkers.py')
+        st.switch_page('./pages/5_Biomarkers.py')
     except requests.exceptions.ConnectionError:
         st.error('Connection error. Please check your FastAPI server.')
         st.stop()

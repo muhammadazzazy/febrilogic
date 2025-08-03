@@ -29,17 +29,6 @@ def upload_patient_data(patient_request: PatientRequest,
     )
     patient_ids.append(db.query(patient_symptoms.c.patient_id).order_by(
         db.query(patient_symptoms.c.patient_id.desc())).limit(1).scalar())
-    # if (patient_ids[0]) and (patient_ids[1]):
-    #     if patient_ids[0] - patient_ids[1] != 0:
-    #         raise HTTPException(
-    #             status_code=400,
-    #             detail='No patient symptoms found. Please submit patient symptoms first.'
-    #         )
-    # if (patient_ids[0]) and (not patient_ids[1]):
-    #     raise HTTPException(
-    #         status_code=400,
-    #         detail='No patient symptoms found. Please submit patient symptoms first.'
-    #     )
     patient = Patient(
         age=patient_request.age,
         city=patient_request.city,

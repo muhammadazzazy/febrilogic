@@ -6,7 +6,7 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from apis.routes import auth, biomarkers, countries, patients, symptoms
+from apis.routes import auth, biomarkers, countries, diseases, patients, symptoms
 
 from apis.config import (
     FAST_API_HOST, FAST_API_PORT
@@ -34,6 +34,7 @@ api = FastAPI(lifespan=lifespan)
 api.include_router(auth.api_router)
 api.include_router(biomarkers.api_router)
 api.include_router(countries.api_router)
+api.include_router(diseases.api_router)
 api.include_router(patients.api_router)
 api.include_router(symptoms.api_router)
 

@@ -106,3 +106,21 @@ patient_biomarkers = Table(
     Column('created_at', DateTime(timezone=True),
            server_default=func.now())
 )
+
+
+class Disease(Base):
+    """Store disease information in the database."""
+    __tablename__ = 'diseases'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    name = Column(String, nullable=False)
+
+
+patient_negative_diseases = Table(
+    'patient_negative_diseases',
+    Base.metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('patient_id', ForeignKey('patients.id')),
+    Column('disease_id', ForeignKey('diseases.id')),
+    Column('created_at', DateTime(timezone=True),
+           server_default=func.now())
+)

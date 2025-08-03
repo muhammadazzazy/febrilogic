@@ -50,7 +50,8 @@ if not st.session_state.biomarkers_loaded:
 
 checkboxes: dict[str, bool] = {}
 
-biomarkers: list[dict[str, str]] = st.session_state.get('biomarkers', [])
+biomarkers: list[dict[str, str]] = sorted(
+    st.session_state.get('biomarkers', []), key=lambda x: x['abbreviation'])
 biomarker_units: dict[str, str] = {
     biomarker['abbreviation']: biomarker['unit'] for biomarker in biomarkers
 }
@@ -68,16 +69,27 @@ biomarker_reference_ranges: dict[str, str] = {
     for biomarker in biomarkers
 }
 
-count: int = 0
+biomarker_names: dict[str, str] = {
+    biomarker['abbreviation']: biomarker.get('name', '')
+    for biomarker in biomarkers
+}
+
 for biomarker, unit in biomarker_units.items():
     with st.container():
         row = st.columns([2, 3, 4], gap='medium', border=False)
-        checkboxes[f'{biomarker}'] = row[0].checkbox(
-            label=biomarker,
-            key=f'{biomarker}_checkbox',
-            value=False,
-            help=f"{biomarkers[count]['name']}"
-        )
+        if biomarker_names[biomarker]:
+            checkboxes[f'{biomarker}'] = row[0].checkbox(
+                label=biomarker,
+                key=f'{biomarker}_checkbox',
+                value=False,
+                help=f"{biomarker_names[biomarker]}"
+            )
+        else:
+            checkboxes[f'{biomarker}'] = row[0].checkbox(
+                label=biomarker,
+                key=f'{biomarker}_checkbox',
+                value=False
+            )
         row[0].caption(
             f"Reference Range: {biomarker_reference_ranges[biomarker]}")
     if checkboxes[f'{biomarker}']:
@@ -95,7 +107,6 @@ for biomarker, unit in biomarker_units.items():
             options=[unit],
             index=0
         )
-    count += 1
 
 btn_cols = st.columns(5, gap='medium')
 submitted = btn_cols[-1].button(

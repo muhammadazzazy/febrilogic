@@ -91,7 +91,7 @@ patient_ids: list[int] = [patient['id']
 
 st.session_state.patient_ids = patient_ids
 
-st.session_state.patient_id = cols[0].selectbox(label='Select patient',
+st.session_state.patient_id = cols[0].selectbox(label='Select a patient',
                                                       options=['New patient'] + patient_ids)
 if st.session_state.patient_id == 'New patient':
     st.session_state.patient_id = 0

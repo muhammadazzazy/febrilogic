@@ -25,12 +25,21 @@ def get_biomarkers(user: Annotated[dict, Depends(get_current_user)],
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
     results: list[Biomarker] = db.query(Biomarker).all()
-    biomarkers: list[dict[str, str]] = [{
-        'abbreviation': result.abbreviation,
-        'name': result.name,
-        'unit': result.unit,
-        'reference_range': result.reference_range
-    } for result in results]
+    biomarkers: list[dict[str, str]] = []
+    for result in results:
+        if result.name:
+            biomarkers.append({
+                'name': result.name,
+                'abbreviation': result.abbreviation,
+                'unit': result.unit,
+                'reference_range': result.reference_range
+            })
+        else:
+            biomarkers.append({
+                'abbreviation': result.abbreviation,
+                'unit': result.unit,
+                'reference_range': result.reference_range
+            })
     return {
         'biomarkers': biomarkers
     }

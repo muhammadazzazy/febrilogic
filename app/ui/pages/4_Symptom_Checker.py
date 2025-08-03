@@ -32,14 +32,15 @@ st.header('🩺 Symptom Checker')
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
 
 patient_ids: list[str] = [str(patient['id'])
-                          for patient in patients if patient.get('id')]
+                          for patient in patients
+                          if patient.get('id')]
 
 
 cols = st.columns(5, gap='large', border=False)
 
 if patient_ids:
     st.session_state.patient_id = int(cols[0].selectbox(
-        label='Select patient',
+        label='Select a patient',
         options=patient_ids,
     ))
 else:
@@ -68,7 +69,6 @@ if not st.session_state.get('symptoms_loaded', False):
     except RequestException as e:
         st.error(f'Error fetching symptoms: {e}')
         st.stop()
-
 
 category_symptom_definition = st.session_state.get(
     'category_symptom_definition', {}

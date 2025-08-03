@@ -26,13 +26,6 @@ st.markdown(
     '##### Has the selected patient had any disease-specific tests that returned negative results?'
 )
 
-cols = st.columns(5)
-cols[0].selectbox(
-    label='Select a patient',
-    options=st.session_state.get('patient_ids', []),
-    key='patient_id',
-)
-
 if not st.session_state.get('diseases_loaded', False):
     try:
         with st.spinner('Loading disease information...'):
@@ -56,17 +49,43 @@ for disease in st.session_state.get('diseases', []):
 
 unique_diseases: list[str] = sorted(disease_set)
 
-checkboxes: dict[str, bool] = {}
-with st.form(key='disease_form', clear_on_submit=True):
-    cols = st.columns(2)
-    for i, disease in enumerate(unique_diseases):
-        checkboxes[disease] = cols[i % 2].checkbox(
-            label=disease, key=f'{disease}_checkbox')
-    cols = st.columns(5)
-    submitted = cols[4].form_submit_button(label='Next',
-                                           icon='➡️',
-                                           use_container_width=True)
 
+def reset_button() -> None:
+    """Reset the disease specific tests checkboxes."""
+    for unique_disease in unique_diseases:
+        st.session_state[f'{unique_disease}_checkbox'] = False
+
+
+with st.container(border=False):
+    cols = st.columns(5)
+    cols[0].selectbox(
+        label='Select a patient',
+        options=st.session_state.get('patient_ids', []),
+        key='patient_id',
+    )
+    cols[4].button(
+        label='Reset',
+        key='disease_specific_tests_reset',
+        icon='🔄',
+        use_container_width=True,
+        on_click=reset_button
+    )
+
+with st.container(border=True):
+    cols = st.columns(2, border=False, gap='small')
+    for i, disease in enumerate(unique_diseases):
+        cols[i % 2].checkbox(
+            label=disease, key=f'{disease}_checkbox')
+
+    cols = st.columns(5)
+    submitted = cols[4].button(label='Next',
+                               icon='➡️',
+                               use_container_width=True)
+
+checkboxes: dict[str, bool] = {
+    disease: st.session_state.get(f'{disease}_checkbox', False)
+    for disease in unique_diseases
+}
 if submitted:
     negative_diseases: list[str] = [disease for disease,
                                     checked in checkboxes.items() if checked]

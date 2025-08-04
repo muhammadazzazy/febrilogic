@@ -59,8 +59,9 @@ biomarker_units: dict[str, str] = {
 cols = st.columns(5, gap='large', border=False)
 
 cols[0].selectbox(label='Select patient',
-                  key='patient_id',
-                  options=st.session_state.get('patient_ids'))
+                  key='biomarkers_selectbox',
+                  options=st.session_state.get('patient_ids'),
+                  index=st.session_state.get('patient_id')-1)
 
 
 def reset_button() -> None:

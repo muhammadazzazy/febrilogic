@@ -4,7 +4,7 @@ from typing import Annotated, Any
 import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
 from pandas import DataFrame
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from apis.config import BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE
@@ -226,8 +226,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     positive_symptoms: list[str] = [
         row.name for row in db.query(Symptom.name)
         .join(patient_symptoms)
-        .filter(patient_symptoms.c.patient_id == patient_id)
-        .all()
+        .filter(patient_symptoms.c.patient_id == patient_id).all()
     ]
     disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
                                               positive_symptoms=positive_symptoms)

@@ -66,7 +66,9 @@ with st.container(border=False):
     cols = st.columns(5)
     cols[0].selectbox(
         label='Select a patient',
-        options=st.session_state.get('patient_ids', [])
+        key='disease_specific_tests_selectbox',
+        options=st.session_state.get('patient_ids', []),
+        index=st.session_state.get('patient_id')-1
     )
     cols[4].button(
         label='Reset',

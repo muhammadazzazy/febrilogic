@@ -26,13 +26,14 @@ if not st.session_state.get('token', ''):
 st.header('🩺 Symptom Checker')
 
 
-patient_ids: list[int] = st.session_state.get('patient_ids', [])
 cols = st.columns(5, gap='large', border=False)
 
-if patient_ids:
+if st.session_state.get('patient_ids'):
     st.session_state.patient_id = int(cols[0].selectbox(
         label='Select a patient',
-        options=patient_ids,
+        key='symptom_checker_selectbox',
+        options=st.session_state.get('patient_ids'),
+        index=st.session_state.get('patient_id')-1
     ))
 else:
     st.error('No patients available. Please add a patient first.')

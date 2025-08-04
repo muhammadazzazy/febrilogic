@@ -1,5 +1,5 @@
+"""Show Results page for FebriLogic."""
 import requests
-import matplotlib
 from pandas import DataFrame
 import streamlit as st
 
@@ -20,15 +20,16 @@ st.title('📊 Results')
 
 cols = st.columns(5, gap='medium')
 patient_id = cols[0].selectbox(label='Select a patient',
-                               options=st.session_state.get('patient_ids', []))
-
+                               key='results_selectbox',
+                               options=st.session_state.get('patient_ids', []),
+                               index=st.session_state.get('patient_id')-1)
 
 submitted = cols[4].button(label='Submit',
                            icon='📤',
                            use_container_width=True)
 
 if submitted:
-    url: str = f"{FAST_API_BASE_URL}/api/patients/{st.session_state.get('patient_id')}/calculate"
+    url: str = f"{FAST_API_BASE_URL}/api/patients/{patient_id}/calculate"
     try:
         with st.spinner('Calculating disease probabilities...'):
             response = requests.get(url=url,
@@ -50,7 +51,7 @@ if submitted:
                                'Disease', 'Percentage (%)'])
         symptom_df = symptom_df.sort_values(
             'Percentage (%)', ascending=False)
-        with st.expander('Symptom Probabilities', expanded=True, icon='📈'):
+        with st.expander('Disease probabilities', expanded=True, icon='📈'):
             symptom_df.index = range(1, len(symptom_df) + 1)
             styled_df = symptom_df.style.format({"Percentage (%)": "{:.2%}"}).background_gradient(
                 subset=['Percentage (%)'], cmap='Reds')

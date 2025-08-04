@@ -92,7 +92,9 @@ patient_ids: list[int] = [patient['id']
 st.session_state.patient_ids = patient_ids
 
 st.session_state.patient_id = cols[0].selectbox(label='Select a patient',
-                                                      options=['New patient'] + patient_ids)
+                                                key='patient_info_selectbox',
+                                                options=['New patient'] + patient_ids)
+
 if st.session_state.patient_id == 'New patient':
     st.session_state.patient_id = 0
 
@@ -209,7 +211,7 @@ if st.session_state.get('ready', False):
         else:
             st.warning('No changes detected in patient information.')
             time.sleep(1.5)
-            st.switch_page('./pages/3_Disease_Specific_Tests.py')
+            st.switch_page('./pages/3_Disease-Specific_Tests.py')
     try:
         with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(
@@ -221,9 +223,9 @@ if st.session_state.get('ready', False):
             response.raise_for_status()
         st.success('Patient information submitted successfully.', icon='✅')
         patient_id: int = response.json().get('patient_id')
+        st.session_state.patient_id = patient_id
         if patient_id not in st.session_state.patient_ids:
             st.session_state.patient_ids.append(patient_id)
-            st.session_state.patient_id = patient_id
         time.sleep(1.5)
         st.switch_page('./pages/3_Disease-Specific_Tests.py')
     except requests.exceptions.ConnectionError:

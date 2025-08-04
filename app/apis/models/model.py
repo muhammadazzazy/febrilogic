@@ -26,8 +26,8 @@ patient_symptoms = Table(
     'patient_symptoms',
     Base.metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('patient_id', ForeignKey('patients.id')),
-    Column('symptom_id', ForeignKey('symptoms.id')),
+    Column('patient_id', ForeignKey('patients.id'), nullable=False),
+    Column('symptom_id', ForeignKey('symptoms.id'), nullable=False),
     Column('created_at', DateTime(timezone=True),
            server_default=func.now())
 )
@@ -100,8 +100,8 @@ patient_biomarkers = Table(
     'patient_biomarkers',
     Base.metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('patient_id', ForeignKey('patients.id')),
-    Column('biomarker_id', ForeignKey('biomarkers.id')),
+    Column('patient_id', ForeignKey('patients.id'), nullable=False),
+    Column('biomarker_id', ForeignKey('biomarkers.id'), nullable=False),
     Column('value', Float, nullable=False),
     Column('created_at', DateTime(timezone=True),
            server_default=func.now())
@@ -119,8 +119,8 @@ patient_negative_diseases = Table(
     'patient_negative_diseases',
     Base.metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
-    Column('patient_id', ForeignKey('patients.id')),
-    Column('disease_id', ForeignKey('diseases.id')),
+    Column('patient_id', ForeignKey('patients.id'), nullable=False),
+    Column('disease_id', ForeignKey('diseases.id'), nullable=False),
     Column('created_at', DateTime(timezone=True),
            server_default=func.now())
 )

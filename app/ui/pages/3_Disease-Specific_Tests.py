@@ -62,13 +62,16 @@ def reset_button() -> None:
         st.session_state[f'{unique_disease}_checkbox'] = False
 
 
+index: int = st.session_state.get(
+    'patient_id') - 1 if st.session_state.get('patient_id') else 0
+
 with st.container(border=False):
     cols = st.columns(5)
     cols[0].selectbox(
         label='Select a patient',
         key='disease_specific_tests_selectbox',
         options=st.session_state.get('patient_ids', []),
-        index=st.session_state.get('patient_id')-1
+        index=index
     )
     cols[4].button(
         label='Reset',

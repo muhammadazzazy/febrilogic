@@ -19,10 +19,12 @@ st.title('📊 Results')
 
 
 cols = st.columns(5, gap='medium')
+index: int = st.session_state.get(
+    'patient_id') - 1 if st.session_state.get('patient_id') else 0
 patient_id = cols[0].selectbox(label='Select a patient',
                                key='results_selectbox',
                                options=st.session_state.get('patient_ids', []),
-                               index=st.session_state.get('patient_id')-1)
+                               index=index)
 
 submitted = cols[4].button(label='Submit',
                            icon='📤',

@@ -1,12 +1,13 @@
 """Insert, update, and retrieve patient information."""
 from typing import Annotated, Any
 
+import pandas as pd
 from fastapi import APIRouter, Depends, HTTPException
-
+from pandas import DataFrame
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from apis.routes.auth import get_current_user
+from apis.config import BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE
 from apis.db.database import get_db
 from apis.models.model import (
     Biomarker, Disease, Patient, Symptom,
@@ -16,6 +17,12 @@ from apis.models.patient_negative_diseases_request import PatientNegativeDisease
 from apis.models.patient_request import PatientRequest
 from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
+from apis.routes.auth import get_current_user
+from apis.tools.afi_model import (
+    calculate_disease_scores, softmax, load_disease_data,
+    expand_diseases_for_severity, update_with_all_biomarkers
+)
+
 
 api_router: APIRouter = APIRouter(
     prefix='/api/patients'
@@ -204,4 +211,59 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
         'message': 'Patient symptoms uploaded successfully.',
         'patient_id': patient_id,
         'symptom_ids': symptom_ids
+    }
+
+
+@api_router.get('/{patient_id}/calculate')
+def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
+              db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Calculate disease probabilities based on patient symptoms and biomarkers."""
+    if user is None:
+        raise HTTPException(status_code=401, detail='Authentication failed.')
+    diseases, symptoms = load_disease_data(SYMPTOM_WEIGHTS_FILE)
+    biomarker_df: DataFrame = pd.read_csv(BIOMARKER_STATS_FILE)
+    biomarker_df['disease'] = biomarker_df['disease'].astype(str).str.strip()
+    positive_symptoms: list[str] = [
+        row.name for row in db.query(Symptom.name)
+        .join(patient_symptoms)
+        .filter(patient_symptoms.c.patient_id == patient_id)
+        .all()
+    ]
+    disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
+                                              positive_symptoms=positive_symptoms)
+    disease_sums = {disease: sum(scores)
+                    for disease, scores in disease_scores.items()}
+    disease_names: list[str] = list(disease_sums.keys())
+    disease_values: list[float] = list(disease_sums.values())
+    prior_probs = softmax(disease_values)
+    sym_probs = list(zip(disease_names, prior_probs))
+    sym_probs_expanded = expand_diseases_for_severity(sym_probs)
+    sym_probs_expanded = sorted(
+        sym_probs_expanded, key=lambda x: x[1], reverse=True)
+    result = db.query(
+        Biomarker.abbreviation,
+        patient_biomarkers.c.value
+    ).join(
+        Biomarker, patient_biomarkers.c.biomarker_id == Biomarker.id).filter(
+        patient_biomarkers.c.patient_id == patient_id
+    ).all()
+
+    biomarker_row: dict[str, float] = {
+        row.abbreviation: row.value for row in result}
+
+    if biomarker_row:
+        bio_probs_vals = update_with_all_biomarkers(
+            [d for d, _ in sym_probs_expanded],
+            [p for _, p in sym_probs_expanded],
+            biomarker_df,
+            biomarker_row
+        )
+        bio_probs = list(
+            zip([d for d, _ in sym_probs_expanded], bio_probs_vals))
+    else:
+        bio_probs = sym_probs_expanded.copy()
+    bio_probs = sorted(bio_probs, key=lambda x: x[1], reverse=True)
+    return {
+        'symptom_probabilities': sym_probs_expanded,
+        'symptom_biomarker_probabilities': bio_probs
     }

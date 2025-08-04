@@ -47,7 +47,7 @@ if not st.session_state.get('patients_loaded', False):
         try:
             response = requests.get(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
-                url=f'{FAST_API_BASE_URL}/api/patient',
+                url=f'{FAST_API_BASE_URL}/api/patients',
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
@@ -225,7 +225,7 @@ if st.session_state.get('ready', False):
             st.session_state.patient_ids.append(patient_id)
             st.session_state.patient_id = patient_id
         time.sleep(1.5)
-        st.switch_page('./pages/3_Disease_Specific_Tests.py')
+        st.switch_page('./pages/3_Disease-Specific_Tests.py')
     except requests.exceptions.ConnectionError:
         st.error('Connection error. Please check your FastAPI server.')
         st.stop()

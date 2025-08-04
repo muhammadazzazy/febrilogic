@@ -25,13 +25,8 @@ if not st.session_state.get('token', ''):
 
 st.header('🩺 Symptom Checker')
 
-patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
 
-patient_ids: list[str] = [str(patient['id'])
-                          for patient in patients
-                          if patient.get('id')]
-
-
+patient_ids: list[int] = st.session_state.get('patient_ids', [])
 cols = st.columns(5, gap='large', border=False)
 
 if patient_ids:
@@ -130,7 +125,6 @@ for symptom in symptom_names:
 if st.session_state.get('ready', False):
     st.session_state.ready = False
     symptom_request: dict[str, dict[str, list[str]]] = {
-        'patient_id': st.session_state.get('patient_id'),
         'symptom_names': ticked_symptoms
     }
     try:
@@ -138,7 +132,7 @@ if st.session_state.get('ready', False):
         with st.spinner('Submitting patient symptoms...', show_time=True):
             response = requests.post(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
-                url=f'{FAST_API_BASE_URL}/api/symptoms',
+                url=f'{FAST_API_BASE_URL}/api/patients/{st.session_state.patient_id}/symptoms',
                 json=symptom_request,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )

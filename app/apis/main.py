@@ -6,20 +6,13 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from apis.routes import auth, biomarkers, countries, diseases, patients, symptoms
+from apis.routes import auth, biomarkers, calculate, countries, diseases, patients, symptoms
 
 from apis.config import (
     FAST_API_HOST, FAST_API_PORT
 )
 
-
 from apis.db.database import engine
-
-from apis.tools.afi_model import (
-    process_patient_symptoms, diagnose_patient,
-    expand_disease_probabilities, get_updated_probs
-)
-
 from apis.db.database import Base
 
 
@@ -33,116 +26,11 @@ api = FastAPI(lifespan=lifespan)
 
 api.include_router(auth.api_router)
 api.include_router(biomarkers.api_router)
+api.include_router(calculate.api_router)
 api.include_router(countries.api_router)
 api.include_router(diseases.api_router)
 api.include_router(patients.api_router)
 api.include_router(symptoms.api_router)
-
-
-@api.get('/api/results')
-def process_patient_data() -> dict[str, Any]:
-    """Process patient data to diagnose diseases based on symptoms and biomarkers."""
-    patient_data = api.state.patient_data
-    symptoms = api.state.symptoms
-    diseases = api.state.diseases
-    biomarker_stats_df = api.state.biomarker_stats_df
-    biomarker_df = api.state.biomarker_df
-
-    per_disease_stats: dict[str, dict[str, int]] = {}
-    all_results: list[dict[str, Any]] = []
-
-    # Process each patient
-    for index, patient_row in enumerate(patient_data):
-        patient_id = str(patient_row.get(
-            'patient_id', f'Patient_{index+1}')).strip()
-        true_label = str(patient_row.get('label', '')).strip().lower()
-        positive_symptoms = process_patient_symptoms(patient_row=patient_row,
-                                                     symptoms=symptoms)
-        disease_probabilities = diagnose_patient(diseases=diseases,
-                                                 symptoms=symptoms,
-                                                 positive_symptoms=positive_symptoms)
-        top_disease_symptoms, top_prob_symptoms = disease_probabilities[0]
-
-        # Duplicate dengue/yellow fever to severe/non-severe for downstream layers (NO splitting)
-        expanded_disease_probabilities = expand_disease_probabilities(
-            disease_probabilities)
-
-        # Get top 1, 2, 3 after symptoms only
-        top_symptoms = [None, None, None]
-        top_symptoms[0] = top_disease_symptoms.strip().lower() if len(
-            expand_disease_probabilities) > 0 else None
-        top_symptoms[1] = top_disease_symptoms.strip().lower() if len(
-            expanded_disease_probabilities) > 1 else None
-        top_symptoms[2] = top_disease_symptoms.strip().lower() if len(
-            expanded_disease_probabilities) > 2 else None
-
-        updated_probs = get_updated_probs(biomarker_df=biomarker_df,
-                                          patient_id=patient_id,
-                                          expanded_disease_probabilities=expanded_disease_probabilities,
-                                          biomarker_stats_df=biomarker_stats_df)
-
-        top_disease_biomarkers, top_prob_biomarkers = updated_probs[0]
-
-        # Get top 1, 2, 3 after biomarkers
-        top_biomarkers = [None, None, None]
-        top_biomarkers[0] = updated_probs[0][0].strip(
-        ).lower() if len(updated_probs) > 0 else None
-        top_biomarkers[1] = updated_probs[1][0].strip(
-        ).lower() if len(updated_probs) > 1 else None
-        top_biomarkers[2] = updated_probs[2][0].strip(
-        ).lower() if len(updated_probs) > 2 else None
-
-        # Collect per-patient results for later reporting (all outputs needed)
-        result = {
-            'patient_id': patient_id,
-            'true_label': true_label,
-            'positive_symptoms': len(positive_symptoms),
-            'top1_symptoms': top_symptoms[0],
-            'top2_symptoms': top_symptoms[1],
-            'top3_symptoms': top_symptoms[2],
-            'top1_biomarkers': top_biomarkers[0],
-            'top2_biomarkers': top_biomarkers[1],
-            'top3_biomarkers': top_biomarkers[2],
-            'top_diagnosis_symptoms': top_disease_symptoms,
-            'top_probability_symptoms': top_prob_symptoms,
-            'top_diagnosis_biomarkers': top_disease_biomarkers,
-            'top_probability_biomarkers': top_prob_biomarkers,
-            'all_probabilities_symptoms': expanded_disease_probabilities.copy(),
-            'all_probabilities_biomarkers': updated_probs.copy()
-        }
-        all_results.append(result)
-
-        # Count accuracy for each label (disease)
-        label = true_label
-        if label not in per_disease_stats:
-            per_disease_stats[label] = {
-                'n': 0,
-                'symptoms_top1': 0, 'symptoms_top2': 0, 'symptoms_top3': 0,
-                'biomarkers_top1': 0, 'biomarkers_top2': 0, 'biomarkers_top3': 0
-            }
-        per_disease_stats[label]['n'] += 1
-        if label == top_symptoms[0]:
-            per_disease_stats[label]['symptoms_top1'] += 1
-        if label in [top_symptoms[0], top_symptoms[1]]:
-            per_disease_stats[label]['symptoms_top2'] += 1
-        if label in [top_symptoms[0], top_symptoms[1], top_symptoms[2]]:
-            per_disease_stats[label]['symptoms_top3'] += 1
-
-        if label == top_biomarkers[0]:
-            per_disease_stats[label]['biomarkers_top1'] += 1
-        if label in [top_biomarkers[0], top_biomarkers[1]]:
-            per_disease_stats[label]['biomarkers_top2'] += 1
-        if label in [top_biomarkers[0], top_biomarkers[1], top_biomarkers[2]]:
-            per_disease_stats[label]['biomarkers_top3'] += 1
-
-    api.state.all_results = all_results
-    api.state.per_disease_stats = per_disease_stats
-
-    return {
-        'message': 'Patient data processed successfully.',
-        'results': all_results,
-        'per_disease_stats': per_disease_stats
-    }
 
 
 @api.get('/api/accuracy')

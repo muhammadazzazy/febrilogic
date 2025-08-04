@@ -142,14 +142,13 @@ if submitted:
     try:
         with st.spinner('Submitting biomarkers...', show_time=True):
             patient_biomarkers_request = {
-                'patient_id': st.session_state.get('patient_id'),
                 'biomarker_values': biomarker_values
             }
             time.sleep(5)
             response = requests.post(
                 json=patient_biomarkers_request,
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
-                url=f'{FAST_API_BASE_URL}/api/biomarkers',
+                url=f"{FAST_API_BASE_URL}/api/patients/{st.session_state.patient_id}/biomarkers",
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()

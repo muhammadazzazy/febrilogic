@@ -195,7 +195,7 @@ if st.session_state.get('ready', False):
         'race': str(patient_race),
         'sex': str(patient_sex)
     }
-    url: str = f'{FAST_API_BASE_URL}/api/patient'
+    url: str = f'{FAST_API_BASE_URL}/api/patients'
     current_patient = next(
         (patient for patient in patients if patient['id'] == patient_id), None)
     if current_patient:
@@ -222,7 +222,8 @@ if st.session_state.get('ready', False):
         st.success('Patient information submitted successfully.', icon='✅')
         patient_id: int = response.json().get('patient_id')
         if patient_id not in st.session_state.patient_ids:
-            st.session_state.patients.append(patient_id)
+            st.session_state.patient_ids.append(patient_id)
+            st.session_state.patient_id = patient_id
         time.sleep(1.5)
         st.switch_page('./pages/3_Disease_Specific_Tests.py')
     except requests.exceptions.ConnectionError:

@@ -101,9 +101,8 @@ if submitted:
     try:
         with st.spinner('Submitting negative diseases for selected patient...'):
             response = requests.post(
-                url=f'{FAST_API_BASE_URL}/api/diseases',
+                url=f'{FAST_API_BASE_URL}/api/patients/{st.session_state.patient_id}/diseases',
                 json={
-                    'patient_id': st.session_state.patient_id,
                     'negative_diseases': negative_diseases
                 },
                 headers={'Authorization': f'Bearer {st.session_state.token}'},

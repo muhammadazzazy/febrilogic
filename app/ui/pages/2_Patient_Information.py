@@ -95,9 +95,20 @@ st.session_state.patient_id = cols[0].selectbox(label='Select a patient',
                                                 key='patient_info_selectbox',
                                                 options=['New patient'] + patient_ids)
 
+country_id: int = 0
+for patient in st.session_state.patients:
+    if patient['id'] == st.session_state.patient_id:
+        country_id: int = int(patient['country_id'])
+        break
+
+countries = st.session_state.get('countries', [])
+for country in countries:
+    if country['id'] == country_id:
+        patient_country = country['common_name']
+        break
+
 if st.session_state.patient_id == 'New patient':
     st.session_state.patient_id = 0
-
 
 patient_id = st.session_state.patient_id
 patients = st.session_state.patients
@@ -116,8 +127,7 @@ if patient_id != last_patient_id:
              int(patient_id)), None
         )
         if selected:
-            st.session_state.patient_country = selected.get(
-                'country', PLACEHOLDER)
+            st.session_state.patient_country = patient_country
             st.session_state.patient_city = selected.get('city', '')
             st.session_state.patient_age = selected['age']
             st.session_state.patient_race = selected.get('race', PLACEHOLDER)

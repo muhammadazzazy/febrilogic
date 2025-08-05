@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
-    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL
+    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
+    OPENROUTER_READ_TIMEOUT, OPENROUTER_CONNECT_TIMEOUT
 )
 from apis.db.database import get_db
 from apis.models.model import (
@@ -333,7 +334,6 @@ def generate(patient_id: int, disease_probabilities: dict) -> dict[str, str]:
         'symptom_probabilities', [])
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
-
     data: dict[str, str] = {
         'model': OPENROUTER_MODEL,
         'messages': [
@@ -346,8 +346,7 @@ def generate(patient_id: int, disease_probabilities: dict) -> dict[str, str]:
         ]
     }
     response = requests.post(url=OPENROUTER_URL,
-                             headers=headers, data=json.dumps(data), timeout=(10, 30))
+                             headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
     return {
-        'content': response.json().get('choices', [])[0].get(
-            'message', {}).get('content', '')
+        'content': response.json().get('choices', [])[0].get('message', {}).get('content', '')
     }

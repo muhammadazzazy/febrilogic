@@ -51,3 +51,9 @@ OPENROUTER_MODEL: Final[str] = os.environ.get(
 
 OPENROUTER_URL: Final[str] = os.environ.get(
     'OPENROUTER_URL')
+
+OPENROUTER_CONNECT_TIMEOUT: Final[int] = int(
+    os.environ.get('OPENROUTER_CONNECT_TIMEOUT', 5))
+
+OPENROUTER_READ_TIMEOUT: Final[int] = int(
+    os.environ.get('OPENROUTER_READ_TIMEOUT', 10))

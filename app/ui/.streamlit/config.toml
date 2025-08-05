@@ -2,9 +2,6 @@
 showErrorDetails = "full"
 toolbarMode = "auto"
 showSidebarNavigation = true
-magicEnabled = true
-fastReruns = true
-enforceSerializableSessionState = false
 
 [server]
 headless = false

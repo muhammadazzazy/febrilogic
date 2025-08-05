@@ -42,3 +42,12 @@ VERIFICATION_EMAIL_TEMPLATE: Final[Path] = APIS_DIR / Path(
 
 RESEND_MAX_RETRIES: Final[int] = int(
     os.environ.get('RESEND_MAX_RETRIES', 3))
+
+OPENROUTER_API_KEY: Final[str] = os.environ.get(
+    'OPENROUTER_API_KEY')
+
+OPENROUTER_MODEL: Final[str] = os.environ.get(
+    'OPENROUTER_MODEL')
+
+OPENROUTER_URL: Final[str] = os.environ.get(
+    'OPENROUTER_URL')

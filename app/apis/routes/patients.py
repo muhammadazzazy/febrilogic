@@ -1,13 +1,18 @@
 """Insert, update, and retrieve patient information."""
 from typing import Annotated, Any
 
+import json
 import pandas as pd
+import requests
 from fastapi import APIRouter, Depends, HTTPException
 from pandas import DataFrame
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
-from apis.config import BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE
+from apis.config import (
+    BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
+    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL
+)
 from apis.db.database import get_db
 from apis.models.model import (
     Biomarker, Disease, Patient, Symptom,
@@ -314,4 +319,35 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     return {
         'symptom_probabilities': sym_probs_expanded,
         'symptom_biomarker_probabilities': bio_probs
+    }
+
+
+@api_router.post('/{patient_id}/generate')
+def generate(patient_id: int, disease_probabilities: dict) -> dict[str, str]:
+    """Generate an LLM response based on calculated disease probabilities."""
+    headers: dict[str, str] = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json'
+    }
+    symptom_probabilities: list[tuple[str, float]] = disease_probabilities.get(
+        'symptom_probabilities', [])
+    biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
+        'biomarker_probabilities', [])
+
+    data: dict[str, str] = {
+        'model': OPENROUTER_MODEL,
+        'messages': [
+            {
+                'role': 'user',
+                'content': f"Given the following disease probabilities for Patient {patient_id} (ratios):\n{json.dumps(symptom_probabilities)}\n\n"
+                f"and the following biomarker probabilities (ratios):\n{json.dumps(biomarker_probabilities)}\n\n"
+                "What are the top 3 most likely diseases (percentages)? Arrange the top 3 diseases in a numbered list from 1 to 3."
+            }
+        ]
+    }
+    response = requests.post(url=OPENROUTER_URL,
+                             headers=headers, data=json.dumps(data), timeout=(10, 30))
+    return {
+        'content': response.json().get('choices', [])[0].get(
+            'message', {}).get('content', '')
     }

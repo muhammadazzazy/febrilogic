@@ -25,6 +25,7 @@ st.session_state.setdefault('countries_loaded', False)
 if not st.session_state.get('token', ''):
     st.error('Please log in to access patient information.')
     st.session_state.patients_loaded = False
+    st.session_state.countries_loaded = False
     st.session_state.patients = []
     st.session_state.countries = []
     st.session_state.patient_id = 0
@@ -224,7 +225,7 @@ if st.session_state.get('ready', False):
     if current_patient:
         if int(current_patient['age']) != int(patient_age) \
                 or current_patient['city'] != patient_city \
-                or current_patient['country'] != patient_country \
+                or current_patient['country_id'] != country_id \
                 or current_patient['race'] != patient_race \
                 or current_patient['sex'] != patient_sex:
             body['id'] = int(patient_id)

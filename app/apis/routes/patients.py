@@ -127,6 +127,7 @@ def add_patient_negative_diseases(
     """Add negative disease for a patient."""
     if not user:
         raise HTTPException(status_code=401, detail="Authentication failed.")
+
     patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
                                                 Patient.user_id == user['id']).first()
     if not patient:
@@ -159,6 +160,13 @@ def upload_patient_biomarkers(
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
+
+    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
+                                                Patient.user_id == user['id']).first()
+    if not patient:
+        raise HTTPException(status_code=403,
+                            detail='Not enough permissions to update this patient.')
+
     biomarker_values: dict[str, float] = \
         patient_biomarkers_request.biomarker_values
 
@@ -220,14 +228,49 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     """Calculate disease probabilities based on patient symptoms and biomarkers."""
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication failed.')
-    diseases, symptoms = load_disease_data(SYMPTOM_WEIGHTS_FILE)
+
+    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
+                                                Patient.user_id == user['id']).first()
+    if not patient:
+        raise HTTPException(status_code=403,
+                            detail='Not enough permissions to access this patient.')
+
+    latest_datetime = db.execute(
+        select(patient_negative_diseases.c.created_at)
+        .where(patient_negative_diseases.c.patient_id == patient_id)
+        .order_by(patient_negative_diseases.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    print(f'Latest datetime for negative diseases: {latest_datetime}')
+
+    negative_diseases: list[str] = [
+        row.name for row in db.query(Disease.name)
+        .join(patient_negative_diseases)
+        .filter(patient_negative_diseases.c.patient_id == patient_id,
+                func.DATE(patient_negative_diseases.c.created_at) == func.DATE(latest_datetime)).all()
+    ]
+    print(f'Latest negative diseases: {negative_diseases}')
+
+    diseases, symptoms = load_disease_data(
+        filepath=SYMPTOM_WEIGHTS_FILE, negative_diseases=negative_diseases)
+
+    print(f'Diseases loaded: {list(diseases.keys())}')
     biomarker_df: DataFrame = pd.read_csv(BIOMARKER_STATS_FILE)
     biomarker_df['disease'] = biomarker_df['disease'].astype(str).str.strip()
+    latest_datetime = db.execute(
+        select(patient_symptoms.c.created_at)
+        .where(patient_symptoms.c.patient_id == patient_id)
+        .order_by(patient_symptoms.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    print(f'Latest datetime for positive symptoms: {latest_datetime}')
     positive_symptoms: list[str] = [
         row.name for row in db.query(Symptom.name)
         .join(patient_symptoms)
-        .filter(patient_symptoms.c.patient_id == patient_id).all()
+        .filter(patient_symptoms.c.patient_id == patient_id,
+                func.DATE(patient_symptoms.c.created_at) == func.DATE(latest_datetime)).all()
     ]
+    print(f'Latest positive symptoms: {positive_symptoms}')
     disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
                                               positive_symptoms=positive_symptoms)
     disease_sums = {disease: sum(scores)
@@ -239,16 +282,25 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     sym_probs_expanded = expand_diseases_for_severity(sym_probs)
     sym_probs_expanded = sorted(
         sym_probs_expanded, key=lambda x: x[1], reverse=True)
-    result = db.query(
+    latest_datetime = db.execute(
+        select(patient_biomarkers.c.created_at)
+        .where(patient_biomarkers.c.patient_id == patient_id)
+        .order_by(patient_biomarkers.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    print(f'Latest datetime for biomarkers: {latest_datetime}')
+    biomarker_result = db.query(
         Biomarker.abbreviation,
         patient_biomarkers.c.value
     ).join(
         Biomarker, patient_biomarkers.c.biomarker_id == Biomarker.id).filter(
-        patient_biomarkers.c.patient_id == patient_id
+        patient_biomarkers.c.patient_id == patient_id,
+        func.DATE(patient_biomarkers.c.created_at) == func.DATE(
+            latest_datetime)
     ).all()
-
+    print(f'Latest biomarkers: {biomarker_result}')
     biomarker_row: dict[str, float] = {
-        row.abbreviation: row.value for row in result}
+        row.abbreviation: row.value for row in biomarker_result}
 
     if biomarker_row:
         bio_probs_vals = update_with_all_biomarkers(

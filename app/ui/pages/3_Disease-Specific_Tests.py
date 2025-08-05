@@ -8,7 +8,7 @@ from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TI
 
 st.set_page_config(
     page_title='Disease Specific Tests',
-    page_icon='🧪',
+    page_icon=':material/lab_panel:',
 )
 
 if not st.session_state.get('token', ''):

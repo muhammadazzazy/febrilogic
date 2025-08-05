@@ -1,0 +1,38 @@
+[client]
+showErrorDetails = "full"
+toolbarMode = "auto"
+showSidebarNavigation = true
+magicEnabled = true
+fastReruns = true
+enforceSerializableSessionState = false
+
+[server]
+headless = false
+
+[theme]
+base = "dark"
+primaryColor = "#0077B6"
+backgroundColor = "#F8F9FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#212529"
+font = "sans-serif"
+headingFont = "sans-serif"
+headingFontSizes = [
+    "2.75rem",
+    "2.25rem",
+    "1.75rem",
+    "1.5rem",
+    "1.25rem",
+    "1rem"
+]
+headingFontWeights = [
+    700,
+    600,
+    600,
+    600,
+    600,
+    600
+]
+
+# dataframeBorderColor = ""
+# dataframeHeaderBackgroundColor = ""

@@ -9,7 +9,7 @@ from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TI
 
 st.set_page_config(
     page_title='Biomarkers',
-    page_icon='🔬',
+    page_icon=':material/biotech:',
     layout='wide',
     initial_sidebar_state='expanded'
 )

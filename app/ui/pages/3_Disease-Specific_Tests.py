@@ -18,7 +18,7 @@ if not st.session_state.get('token', ''):
     st.session_state.patient_ids = []
     st.stop()
 
-st.title('🧪 Disease Specific Tests')
+st.title('🧪 Disease-Specific Tests')
 
 st.session_state.setdefault('diseases_loaded', False)
 

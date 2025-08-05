@@ -45,6 +45,13 @@ class Patient(Base):
     race = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True),
                         server_default=func.now())
+    country_id: Mapped[int] = mapped_column(
+        ForeignKey('countries.id'),
+        nullable=False
+    )
+    country: Mapped['Country'] = relationship(
+        back_populates='patients'
+    )
     user_id: Mapped[int] = mapped_column(
         ForeignKey('users.id'),
         nullable=False
@@ -124,3 +131,12 @@ patient_negative_diseases = Table(
     Column('created_at', DateTime(timezone=True),
            server_default=func.now())
 )
+
+
+class Country(Base):
+    """Store country information in the database."""
+    __tablename__ = 'countries'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    common_name = Column(String, nullable=False, unique=True)
+    official_name = Column(String, nullable=False, unique=True)
+    patients: Mapped[List['Patient']] = relationship(back_populates='country')

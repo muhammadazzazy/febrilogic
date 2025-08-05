@@ -40,9 +40,5 @@ RESEND_API_KEY: Final[str] = os.environ.get('RESEND_API_KEY')
 VERIFICATION_EMAIL_TEMPLATE: Final[Path] = APIS_DIR / Path(
     os.environ.get('VERIFICATION_EMAIL_TEMPLATE'))
 
-COUNTRIES_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('COUNTRIES_FILE'))
-
-
 RESEND_MAX_RETRIES: Final[int] = int(
     os.environ.get('RESEND_MAX_RETRIES', 3))

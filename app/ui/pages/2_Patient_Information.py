@@ -137,6 +137,9 @@ if cols[5].button(
     st.session_state.submitted = False
 
 countries = st.session_state.get('countries', [])
+common_names: list[str] = sorted(
+    [country['common_name'] for country in countries]
+)
 with st.form('patient_info_form'):
     columns = st.columns(2, gap='medium', border=True)
     patient_age: int = columns[0].number_input(label='Age',
@@ -145,7 +148,7 @@ with st.form('patient_info_form'):
     patient_country: str = columns[1].selectbox(label='Country',
                                                 key='patient_country',
                                                 options=[
-                                                    PLACEHOLDER] + countries,
+                                                    PLACEHOLDER] + common_names,
                                                 width='stretch',
                                                 label_visibility='visible')
     patient_sex: str = columns[0].selectbox(label='Sex', options=[PLACEHOLDER, 'Male',
@@ -187,13 +190,21 @@ if submitted:
 
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
 patient_id: int = st.session_state.get('patient_id')
+
+country_id: int = 0
+countries = st.session_state.get('countries', [])
+for country in countries:
+    if country['common_name'] == patient_country:
+        country_id = country['id']
+        break
+
 if st.session_state.get('ready', False):
     st.session_state.ready = False
     st.session_state.patients_loaded = False
     body: dict[str, str | int] = {
         'age': int(patient_age),
         'city': str(patient_city),
-        'country': str(patient_country),
+        'country_id': country_id,
         'race': str(patient_race),
         'sex': str(patient_sex)
     }

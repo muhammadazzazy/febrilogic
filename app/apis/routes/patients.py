@@ -46,7 +46,7 @@ def upload_patient_data(patient_request: PatientRequest,
     patient = Patient(
         age=patient_request.age,
         city=patient_request.city,
-        country=patient_request.country,
+        country_id=patient_request.country_id,
         race=patient_request.race,
         sex=patient_request.sex,
         user_id=user['id']
@@ -69,15 +69,12 @@ def get_patient_info(user: Annotated[dict, Depends(get_current_user)],
                             detail='Authentication failed.')
     user_patients: list[Patient] = db.query(
         Patient).filter(Patient.user_id == user['id']).all()
-    if not user_patients:
-        raise HTTPException(status_code=404,
-                            detail='No patients found.')
     patients: list[dict[str, Any]] = []
     for patient in user_patients:
         patients.append({
             'age': patient.age,
             'city': patient.city,
-            'country': patient.country,
+            'country_id': patient.country_id,
             'id': patient.id,
             'race': patient.race,
             'sex': patient.sex
@@ -107,7 +104,7 @@ def update_patient_info(patient_id: int,
     ).first()
     patient.age = patient_request.age
     patient.city = patient_request.city
-    patient.country = patient_request.country
+    patient.country_id = patient_request.country_id
     patient.race = patient_request.race
     patient.sex = patient_request.sex
     db.commit()

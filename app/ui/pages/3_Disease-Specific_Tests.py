@@ -118,6 +118,6 @@ if submitted:
         time.sleep(2)
         st.switch_page('./pages/4_Symptom_Checker.py')
     except requests.exceptions.ConnectionError:
-        st.error("Failed to connect to the API. Please check your connection.")
+        st.error('Please check your internet connection or try again later.')
         time.sleep(2)
         st.stop()

@@ -80,7 +80,7 @@ if st.session_state.get('login', False):
         error_detail = response.json().get('detail', 'Unknown error')
         cols[1].error(f"Login unsuccessful: {error_detail}")
     except requests.exceptions.RequestException as e:
-        st.error(f"Error connecting to the server: {e}")
+        st.error(f'Error connecting to the server: {e}')
 
 if st.session_state.get('register', False):
     st.session_state.login = True

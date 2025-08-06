@@ -1,6 +1,8 @@
 """Show Results page for FebriLogic."""
 from typing import Any
+
 import requests
+from requests.exceptions import HTTPError
 from pandas import DataFrame
 import streamlit as st
 
@@ -92,14 +94,22 @@ if submitted:
     headers: dict[str, str] = {
         'Authorization': f"Bearer {st.session_state.get('token')}"
     }
-    with st.spinner('Generating LLM response...'):
-        response = requests.post(
-            url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate/openrouter',
-            headers=headers,
-            json=payload,
-            timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
-        )
-    content: str = response.json().get('content', '')
-    with st.expander('LLM Response', expanded=True, icon='🤖'):
-        st.write(content)
-    response.raise_for_status()
+    try:
+        with st.spinner('Generating LLM response...'):
+            response = requests.post(
+                url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate/openrouter',
+                headers=headers,
+                json=payload,
+                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+            )
+        response.raise_for_status()
+        content: str = response.json().get('content', '')
+        with st.expander('LLM Response', expanded=True, icon='🤖'):
+            st.write(content)
+    except HTTPError as e:
+        detail: str = e.response.json().get('detail', 'Unknown error')
+        st.error(f'Error generating LLM response: {detail}')
+        st.stop()
+    except requests.exceptions.ConnectionError:
+        st.error('Please check your internet connection or try again later.')
+        st.stop()

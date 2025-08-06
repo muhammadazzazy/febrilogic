@@ -50,7 +50,7 @@ if not st.session_state.biomarkers_loaded:
         st.error(f'Error fetching biomarkers: {error_detail}')
         st.rerun()
     except requests.exceptions.ConnectionError:
-        st.error('Connection error. Please check your FastAPI server.')
+        st.error('Please check your internet connection or try again later.')
         st.stop()
 
 checkboxes: dict[str, bool] = {}

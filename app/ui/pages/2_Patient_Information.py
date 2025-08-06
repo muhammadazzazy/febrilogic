@@ -251,7 +251,7 @@ if st.session_state.get('ready', False):
         time.sleep(1.5)
         st.switch_page('./pages/3_Disease-Specific_Tests.py')
     except requests.exceptions.ConnectionError:
-        st.error('Connection error. Please check your FastAPI server.')
+        st.error('Please check your internet connection or try again later.')
         st.stop()
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')

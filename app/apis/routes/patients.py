@@ -350,8 +350,20 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
     }
     response = requests.post(url=OPENROUTER_URL,
                              headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
+    choices: list[dict[str, Any]] = response.json().get('choices', [])
+    if not choices:
+        raise HTTPException(
+            status_code=500, detail='No choices returned from OpenRouter API.')
+    if 'message' not in choices[0]:
+        raise HTTPException(
+            status_code=500, detail='No message in the response from OpenRouter API.')
+    message: dict[str, Any] = choices[0].get('message', {})
+    if 'content' not in message:
+        raise HTTPException(
+            status_code=500, detail='No content in the response from OpenRouter API.')
+    content = message.get('content', '')
     return {
-        'content': response.json().get('choices', [])[0].get('message', {}).get('content', '')
+        'content': content
     }
 
 
@@ -381,8 +393,18 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     }
     response = requests.post(url=GROQ_URL,
                              headers=headers, data=json.dumps(data), timeout=(GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT))
-    content: str = response.json().get('choices', [])[
-        0].get('message', {}).get('content', '')
+    choices: list[dict[str, Any]] = response.json().get('choices', [])
+    if not choices:
+        raise HTTPException(
+            status_code=500, detail='No choices returned from Groq API.')
+    if 'message' not in choices[0]:
+        raise HTTPException(
+            status_code=500, detail='No message in the response from Groq API.')
+    message: dict[str, Any] = choices[0].get('message', {})
+    if 'content' not in message:
+        raise HTTPException(
+            status_code=500, detail='No content in the response from Groq API.')
+    content: str = message.get('content', '')
     return {
         'content': content
     }

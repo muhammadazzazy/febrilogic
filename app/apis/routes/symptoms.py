@@ -6,8 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from apis.db.database import get_db
-from apis.models.model import Category, Patient, patient_symptoms, Symptom
-from apis.models.symptom_request import SymptomRequest
+from apis.models.model import SymptomCategory, Symptom
 from apis.routes.auth import get_current_user
 
 api_router: APIRouter = APIRouter(
@@ -23,7 +22,7 @@ def get_definitions(user: Annotated[dict, Depends(get_current_user)],
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
-    results = db.query(Category.name, Symptom.name,
+    results = db.query(SymptomCategory.name, Symptom.name,
                        Symptom.definition).join(Symptom).all()
     category_symptom_definition: defaultdict[str,
                                              list[tuple[str, str]]] = defaultdict(list)

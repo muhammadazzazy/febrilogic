@@ -19,7 +19,7 @@ if not st.session_state.get('token', ''):
     st.stop()
 
 if not st.session_state.get('patient_ids', []):
-    st.error('No patients found. Please add a patient first.')
+    st.error('No patients available. Please add a patient first.')
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
     st.stop()
@@ -99,10 +99,6 @@ patient_id: int = st.session_state.get('patient_id')
 if submitted:
     negative_diseases: list[str] = [disease for disease,
                                     checked in checkboxes.items() if checked]
-    if not negative_diseases:
-        st.warning('No negative diseases selected. Skipping...')
-        time.sleep(2)
-        st.switch_page('./pages/4_Symptom_Checker.py')
     try:
         with st.spinner('Submitting negative diseases for selected patient...'):
             response = requests.post(

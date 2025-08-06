@@ -5,6 +5,7 @@ from uuid import uuid4
 
 import resend
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jinja2 import Template
 from jose import jwt, JWTError
@@ -144,9 +145,7 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     user.is_verified = True
     user.verification_code = None
     db.commit()
-    return {
-        'message': f'{user.email} verified successfully.'
-    }
+    return RedirectResponse(url='http://localhost:8501/Login')
 
 
 def send_verification_email(to_email: str, verification_code: str) -> None:
@@ -162,7 +161,8 @@ def send_verification_email(to_email: str, verification_code: str) -> None:
     }
     for _i in range(RESEND_MAX_RETRIES):
         email: resend.Email = resend.Emails.send(params)
-        if email:
+        if email and 'id' in email:
+            print(f"Verification email ID: {email['id']}")
             return {
                 'message': f"Verification email {email['id']} sent to {to_email}"
             }

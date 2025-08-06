@@ -121,7 +121,7 @@ def update_patient_info(patient_id: int,
 
 
 @api_router.post('/{patient_id}/diseases')
-def add_patient_negative_diseases(
+def upload_patient_negative_diseases(
     patient_id: int,
     request: PatientNegativeDiseasesRequest,
     user: Annotated[dict, Depends(get_current_user)],
@@ -143,6 +143,11 @@ def add_patient_negative_diseases(
         data.append({
             'patient_id': patient_id,
             'disease_id': disease_id
+        })
+    if not data:
+        data.append({
+            'patient_id': patient_id,
+            'disease_id': None
         })
     db.execute(patient_negative_diseases.insert(), data)
     db.commit()
@@ -173,17 +178,26 @@ def upload_patient_biomarkers(
     biomarker_values: dict[str, float] = \
         patient_biomarkers_request.biomarker_values
 
-    data: list = []
-    for biomarker, value in biomarker_values.items():
-        db_biomarker = db.query(Biomarker).filter(
-            Biomarker.abbreviation == biomarker).first()
-        if db_biomarker is None:
-            raise HTTPException(status_code=404,
-                                detail=f'{biomarker} biomarker not found.')
+    abbreviations: list[str] = list(biomarker_values.keys())
+    biomarkers = db.query(Biomarker).filter(
+        Biomarker.abbreviation.in_(abbreviations)).all()
+    biomarker_map: dict[str, int] = {
+        b.abbreviation: b.id for b in biomarkers
+    }
+
+    data: list[dict[str, int | float | None]] = []
+    for abbreviation, value in biomarker_values.items():
+        biomarker_id = biomarker_map.get(abbreviation)
         data.append({
             'patient_id': patient_id,
-            'biomarker_id': db_biomarker.id,
+            'biomarker_id': biomarker_id,
             'value': value
+        })
+    if not data:
+        data.append({
+            'patient_id': patient_id,
+            'biomarker_id': None,
+            'value': None
         })
     db.execute(patient_biomarkers.insert(), data)
     db.commit()
@@ -212,11 +226,16 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
     ).all()
     symptom_ids = [row[0]
                    for row in symptoms]
-    insert_data = [
+    data: list[dict[str, int | None]] = [
         {'patient_id': patient_id, 'symptom_id': sid}
         for sid in symptom_ids
     ]
-    db.execute(patient_symptoms.insert(), insert_data)
+    if not data:
+        data.append({
+            'patient_id': patient_id,
+            'symptom_id': None
+        })
+    db.execute(patient_symptoms.insert(), data)
     db.commit()
     return {
         'message': 'Patient symptoms uploaded successfully.',

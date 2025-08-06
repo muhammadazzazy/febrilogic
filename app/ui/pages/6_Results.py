@@ -43,7 +43,7 @@ submitted = cols[4].button(label='Submit',
                            use_container_width=True)
 
 if submitted:
-    url: str = f"{FAST_API_BASE_URL}/api/patients/{patient_id}/calculate"
+    url: str = f'{FAST_API_BASE_URL}/api/patients/{patient_id}/calculate'
     try:
         with st.spinner('Calculating disease probabilities...'):
             response = requests.get(url=url,
@@ -64,27 +64,26 @@ if submitted:
         st.stop()
 
 if submitted:
-    symptom_df = DataFrame(symptom_probabilities, columns=[
-                           'Disease', 'Percentage (%)'])
-    symptom_df = symptom_df.sort_values(
+    symptom_df: DataFrame = DataFrame(symptom_probabilities, columns=[
+        'Disease', 'Percentage (%)'])
+    symptom_df.sort_values(
+        'Percentage (%)', ascending=False, inplace=True)
+    symptom_df.index = range(1, len(symptom_df) + 1)
+    combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
+        'Disease', 'Percentage (%)'])
+    combined_df: DataFrame = combined_df.sort_values(
         'Percentage (%)', ascending=False)
+    combined_df.index = range(1, len(combined_df) + 1)
     with st.expander('Disease probabilities', expanded=True, icon='📈'):
-        symptom_df.index = range(1, len(symptom_df) + 1)
-        styled_df = symptom_df.style.format({"Percentage (%)": "{:.2%}"}).background_gradient(
+        styled_symptom_df: DataFrame = symptom_df.style.format({"Percentage (%)": "{:.2%}"}).background_gradient(
             subset=['Percentage (%)'], cmap='Reds')
-        cols = st.columns(2, gap='medium')
+        cols = st.columns(2, gap='medium', border=True)
         cols[0].subheader('After Symptoms')
-        cols[0].dataframe(styled_df, use_container_width=True)
-
-        combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
-            'Disease', 'Percentage (%)'])
-        combined_df: DataFrame = combined_df.sort_values(
-            'Percentage (%)', ascending=False)
-        cols[1].subheader('After Symptoms + Biomarkers')
-        combined_df.index = range(1, len(combined_df) + 1)
-        styled_df = combined_df.style.format({'Percentage (%)': '{:.2%}'}).background_gradient(
+        cols[0].dataframe(styled_symptom_df, use_container_width=True)
+        styled_combined_df: DataFrame = combined_df.style.format({'Percentage (%)': '{:.2%}'}).background_gradient(
             subset=['Percentage (%)'], cmap='Blues')
-        cols[1].dataframe(styled_df, use_container_width=True)
+        cols[1].subheader('After Symptoms + Biomarkers')
+        cols[1].dataframe(styled_combined_df, use_container_width=True)
 
 if submitted:
     payload: dict[str, Any] = {
@@ -97,7 +96,7 @@ if submitted:
     try:
         with st.spinner('Generating LLM response...'):
             response = requests.post(
-                url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate/openrouter',
+                url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate/groq',
                 headers=headers,
                 json=payload,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)

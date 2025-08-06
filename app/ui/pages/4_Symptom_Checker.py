@@ -39,16 +39,13 @@ cols = st.columns(5, gap='large', border=False)
 
 patient_id: int = st.session_state.get('patient_id')
 index: int = st.session_state.get('patient_ids', []).index(patient_id)
-if st.session_state.get('patient_ids'):
-    st.session_state.patient_id = int(cols[0].selectbox(
-        label='Select a patient',
-        key='symptom_checker_selectbox',
-        options=st.session_state.get('patient_ids'),
-        index=index
-    ))
-else:
-    st.error('No patients available. Please add a patient first.')
-    st.stop()
+
+st.session_state.patient_id = int(cols[0].selectbox(
+    label='Select a patient',
+    key='symptom_checker_selectbox',
+    options=st.session_state.get('patient_ids'),
+    index=index
+))
 
 
 def reset_button() -> None:

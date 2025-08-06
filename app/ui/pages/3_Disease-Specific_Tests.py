@@ -18,15 +18,19 @@ if not st.session_state.get('token', ''):
     st.session_state.patient_ids = []
     st.stop()
 
-st.title('🧪 Disease-Specific Tests')
-
-st.session_state.setdefault('diseases_loaded', False)
-
 if not st.session_state.get('patient_ids', []):
     st.error('No patients found. Please add a patient first.')
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
     st.stop()
+
+if st.session_state.get('patient_id') == 0:
+    st.error('Please select a patient to proceed.')
+    st.stop()
+
+st.title('🧪 Disease-Specific Tests')
+
+st.session_state.setdefault('diseases_loaded', False)
 
 st.markdown(
     '##### Has the selected patient had any disease-specific tests that returned negative results?'
@@ -62,9 +66,8 @@ def reset_button() -> None:
         st.session_state[f'{unique_disease}_checkbox'] = False
 
 
-index: int = st.session_state.get(
-    'patient_id') - 1 if st.session_state.get('patient_id') else 0
-
+patient_id: int = st.session_state.get('patient_id')
+index: int = st.session_state.get('patient_ids', []).index(patient_id)
 with st.container(border=False):
     cols = st.columns(5)
     cols[0].selectbox(
@@ -96,6 +99,8 @@ checkboxes: dict[str, bool] = {
     disease: st.session_state.get(f'{disease}_checkbox', False)
     for disease in unique_diseases
 }
+
+patient_id: int = st.session_state.get('patient_id')
 if submitted:
     negative_diseases: list[str] = [disease for disease,
                                     checked in checkboxes.items() if checked]
@@ -106,7 +111,7 @@ if submitted:
     try:
         with st.spinner('Submitting negative diseases for selected patient...'):
             response = requests.post(
-                url=f'{FAST_API_BASE_URL}/api/patients/{st.session_state.patient_id}/diseases',
+                url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/diseases',
                 json={
                     'negative_diseases': negative_diseases
                 },

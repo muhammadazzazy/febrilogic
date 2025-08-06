@@ -23,15 +23,22 @@ if not st.session_state.get('token', ''):
     st.error('Please log in to access patient symptoms.')
     st.stop()
 
+if not st.session_state.get('patient_ids'):
+    st.error('No patients available. Please add a patient first.')
+    st.stop()
+
+if st.session_state.get('patient_id') == 0:
+    st.error('Please select a patient to proceed.')
+    st.stop()
+
 st.header('🩺 Symptom Checker')
 
 
 cols = st.columns(5, gap='large', border=False)
 
 
-index: int = st.session_state.get(
-    'patient_id') - 1 if st.session_state.get('patient_id') else 0
-
+patient_id: int = st.session_state.get('patient_id')
+index: int = st.session_state.get('patient_ids', []).index(patient_id)
 if st.session_state.get('patient_ids'):
     st.session_state.patient_id = int(cols[0].selectbox(
         label='Select a patient',
@@ -127,6 +134,8 @@ for symptom in symptom_names:
     if st.session_state.get(f'{symptom}_checkbox', False):
         ticked_symptoms.append(symptom)
 
+
+patient_id: int = st.session_state.get('patient_id')
 if st.session_state.get('ready', False):
     st.session_state.ready = False
     symptom_request: dict[str, dict[str, list[str]]] = {
@@ -137,7 +146,7 @@ if st.session_state.get('ready', False):
         with st.spinner('Submitting patient symptoms...', show_time=True):
             response = requests.post(
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
-                url=f'{FAST_API_BASE_URL}/api/patients/{st.session_state.patient_id}/symptoms',
+                url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/symptoms',
                 json=symptom_request,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )

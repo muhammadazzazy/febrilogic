@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 
 from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
-    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
-    OPENROUTER_READ_TIMEOUT, OPENROUTER_CONNECT_TIMEOUT
+    GROQ_API_KEY, GROQ_MODEL, GROQ_URL,
+    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_READ_TIMEOUT, OPENROUTER_CONNECT_TIMEOUT
 )
 from apis.db.database import get_db
 from apis.models.model import (
@@ -323,12 +323,17 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     }
 
 
-@api_router.post('/{patient_id}/generate')
-def generate(patient_id: int, disease_probabilities: dict) -> dict[str, str]:
+@api_router.post('/{patient_id}/generate/openrouter')
+def generate_openrouter(patient_id: int, disease_probabilities: dict,
+                        user: Annotated[dict: [str, Any], Depends(get_current_user)]) -> dict[str, str]:
     """Generate an LLM response based on calculated disease probabilities."""
+    if not user:
+        raise HTTPException(status_code=401, detail='Authentication failed.')
     headers: dict[str, str] = {
         'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://febrilogic.com',
+        'X-Title': 'FebriLogic'
     }
     symptom_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'symptom_probabilities', [])
@@ -341,7 +346,7 @@ def generate(patient_id: int, disease_probabilities: dict) -> dict[str, str]:
                 'role': 'user',
                 'content': f"Given the following disease probabilities for Patient {patient_id} (ratios):\n{json.dumps(symptom_probabilities)}\n\n"
                 f"and the following biomarker probabilities (ratios):\n{json.dumps(biomarker_probabilities)}\n\n"
-                "What are the top 3 most likely diseases (percentages)? Arrange the top 3 diseases in a numbered list from 1 to 3."
+                "What are the top 3 most likely diseases (percentages)? Arrange the top 3 diseases in a numbered list from 1 to 3. Use the biomarker probabilities to make final ranking."
             }
         ]
     }
@@ -349,4 +354,37 @@ def generate(patient_id: int, disease_probabilities: dict) -> dict[str, str]:
                              headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
     return {
         'content': response.json().get('choices', [])[0].get('message', {}).get('content', '')
+    }
+
+
+@api_router.post('/{patient_id}/generate/groq')
+def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
+                  user: Annotated[dict, Depends(get_current_user)]) -> dict[str, str]:
+    """Generate an LLM response using Groq."""
+    if not user:
+        raise HTTPException(status_code=401, detail='Authentication failed.')
+    headers: dict[str, str] = {'Authorization': f'Bearer {GROQ_API_KEY}',
+                               'Content-Type': 'application/json'}
+
+    symptom_probabilities: list[tuple[str, float]] = disease_probabilities.get(
+        'symptom_probabilities', [])
+    biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
+        'biomarker_probabilities', [])
+    data: dict[str, str] = {
+        'model': GROQ_MODEL,
+        'messages': [
+            {
+                'role': 'user',
+                'content': f"Given the following disease probabilities for Patient {patient_id} (ratios):\n{json.dumps(symptom_probabilities)}\n\n"
+                f"and the following biomarker probabilities (ratios):\n{json.dumps(biomarker_probabilities)}\n\n"
+                "What are the top 3 most likely diseases (percentages)? Arrange the top 3 diseases in a numbered list from 1 to 3."
+            }
+        ]
+    }
+    response = requests.post(url=GROQ_URL,
+                             headers=headers, data=json.dumps(data), timeout=(5, 10))
+    content: str = response.json().get('choices', [])[
+        0].get('message', {}).get('content', '')
+    return {
+        'content': content
     }

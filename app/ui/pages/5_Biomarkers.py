@@ -22,12 +22,17 @@ if not st.session_state.get('token', ''):
     st.error('Please log in to access patient biomarkers.')
     st.stop()
 
-st.title('🔬 Biomarkers')
 
 if not st.session_state.get('patient_ids'):
     st.error('No patients available. Please add a patient first.')
     st.stop()
 
+
+if st.session_state.get('patient_id') == 0:
+    st.error('Please select a patient to proceed.')
+    st.stop()
+
+st.title('🔬 Biomarkers')
 
 if not st.session_state.biomarkers_loaded:
     try:
@@ -59,8 +64,8 @@ biomarker_units: dict[str, str] = {
 cols = st.columns(5, gap='large', border=False)
 
 
-index: int = st.session_state.get(
-    'patient_id') - 1 if st.session_state.get('patient_id') else 0
+patient_id: int = st.session_state.get('patient_id')
+index: int = st.session_state.get('patient_ids', []).index(patient_id)
 cols[0].selectbox(label='Select patient',
                   key='biomarkers_selectbox',
                   options=st.session_state.get('patient_ids'),
@@ -142,6 +147,8 @@ for biomarker, flag in checkboxes.items():
         biomarker_values[biomarker] = st.session_state.get(
             f'{biomarker}_value', 0.0)
 
+
+patient_id: int = st.session_state.get('patient_id')
 if submitted:
     try:
         with st.spinner('Submitting biomarkers...', show_time=True):
@@ -152,7 +159,7 @@ if submitted:
             response = requests.post(
                 json=patient_biomarkers_request,
                 headers={'Authorization': f'Bearer {st.session_state.token}'},
-                url=f"{FAST_API_BASE_URL}/api/patients/{st.session_state.patient_id}/biomarkers",
+                url=f"{FAST_API_BASE_URL}/api/patients/{patient_id}/biomarkers",
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()

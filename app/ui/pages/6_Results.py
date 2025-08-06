@@ -16,12 +16,21 @@ if not st.session_state.get('token', ''):
     st.error('Please log in to access results.')
     st.stop()
 
+if not st.session_state.get('patient_ids'):
+    st.error('No patients available. Please add a patient first.')
+    st.stop()
+
+if st.session_state.get('patient_id') == 0:
+    st.error('Please select a patient to proceed.')
+    st.stop()
+
 st.title('📊 Results')
 
 
+patient_id: int = st.session_state.get('patient_id')
+index: int = st.session_state.get('patient_ids', []).index(patient_id)
+
 cols = st.columns(5, gap='medium')
-index: int = st.session_state.get(
-    'patient_id') - 1 if st.session_state.get('patient_id') else 0
 patient_id = cols[0].selectbox(label='Select a patient',
                                key='results_selectbox',
                                options=st.session_state.get('patient_ids', []),
@@ -85,7 +94,7 @@ if submitted:
     }
     with st.spinner('Generating LLM response...'):
         response = requests.post(
-            url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate',
+            url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate/openrouter',
             headers=headers,
             json=payload,
             timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
@@ -94,4 +103,3 @@ if submitted:
     with st.expander('LLM Response', expanded=True, icon='🤖'):
         st.write(content)
     response.raise_for_status()
-    # st.write(response.json())

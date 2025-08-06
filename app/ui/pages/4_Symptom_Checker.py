@@ -2,7 +2,7 @@
 import time
 
 import requests
-from requests.exceptions import HTTPError, RequestException
+from requests.exceptions import HTTPError
 
 import streamlit as st
 
@@ -80,8 +80,8 @@ if not st.session_state.get('symptoms_loaded', False):
         error_detail = response.json().get('detail', 'Unknown error')
         st.error(f'Error fetching symptoms: {error_detail}')
         st.stop()
-    except RequestException as e:
-        st.error(f'Error fetching symptoms: {e}')
+    except requests.exceptions.ConnectionError:
+        st.error('Please check your internet connection or try again later.')
         st.stop()
 
 category_symptom_definition = st.session_state.get(

@@ -17,6 +17,7 @@ st.set_page_config(
 st.session_state.setdefault('token', '')
 
 st.session_state.setdefault('biomarkers_loaded', False)
+st.session_state.setdefault('biomarker_units_loaded', False)
 
 if not st.session_state.get('token', ''):
     st.error('Please log in to access patient biomarkers.')
@@ -53,12 +54,32 @@ if not st.session_state.biomarkers_loaded:
         st.error('Please check your internet connection or try again later.')
         st.stop()
 
+if not st.session_state.biomarker_units_loaded:
+    try:
+        with st.spinner('Loading biomarker units...', show_time=True):
+            response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
+                                    url=f'{FAST_API_BASE_URL}/api/biomarkers/units',
+                                    timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
+            response.raise_for_status()
+            biomarker_units: dict[str, list[str]] = response.json().get(
+                'biomarker_units', {})
+            st.session_state.biomarker_units = biomarker_units
+            st.session_state.biomarker_units_loaded = True
+    except HTTPError:
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error fetching biomarker units: {error_detail}')
+        st.rerun()
+    except requests.exceptions.ConnectionError:
+        st.error('Please check your internet connection or try again later.')
+        st.stop()
+
 checkboxes: dict[str, bool] = {}
 
 biomarkers: list[dict[str, str]] = sorted(
     st.session_state.get('biomarkers', []), key=lambda x: x['abbreviation'])
-biomarker_units: dict[str, str] = {
-    biomarker['abbreviation']: biomarker['unit'] for biomarker in biomarkers
+
+biomarker_std_units: dict[str, str] = {
+    biomarker['abbreviation']: biomarker['standard_unit'] for biomarker in biomarkers
 }
 
 cols = st.columns(5, gap='large', border=False)
@@ -89,7 +110,7 @@ cols[4].button(
 biomarker_reference_ranges: dict[str, str] = {
     biomarker['abbreviation']:
     biomarker['reference_range'] + ' ' +
-    f'({biomarker_units[biomarker['abbreviation']]})'
+    f'({biomarker_std_units[biomarker['abbreviation']]})'
     for biomarker in biomarkers
 }
 
@@ -99,7 +120,9 @@ biomarker_names: dict[str, str] = {
 }
 
 
-for biomarker, unit in biomarker_units.items():
+biomarker_units: dict[str, list[str]] = st.session_state.get(
+    'biomarker_units', {})
+for biomarker, unit in biomarker_std_units.items():
     with st.container():
         row = st.columns([2, 3, 4], gap='medium', border=False)
         if biomarker_names[biomarker]:
@@ -126,12 +149,13 @@ for biomarker, unit in biomarker_units.items():
             format='%.2f',
             width='stretch'
         )
-        row[2].selectbox(
-            key=f'{biomarker}_unit',
-            label='',
-            options=[unit],
-            index=0
-        )
+        if 'ratio' not in biomarker_units.get(biomarker):
+            row[2].selectbox(
+                key=f'{biomarker}_unit',
+                label='',
+                options=biomarker_units.get(biomarker, []),
+                index=0
+            )
 
 btn_cols = st.columns(5, gap='medium')
 submitted = btn_cols[-1].button(
@@ -141,11 +165,13 @@ submitted = btn_cols[-1].button(
 )
 
 
-biomarker_values: dict[str, float] = {}
+biomarker_value_unit: dict[str, tuple[float, str]] = {}
 for biomarker, flag in checkboxes.items():
     if flag:
-        biomarker_values[biomarker] = st.session_state.get(
-            f'{biomarker}_value', 0.0)
+        biomarker_value_unit[biomarker] = (
+            st.session_state.get(f'{biomarker}_value', 0.0),
+            st.session_state.get(f'{biomarker}_unit', 'Please select')
+        )
 
 
 patient_id: int = st.session_state.get('patient_id')
@@ -153,7 +179,7 @@ if submitted:
     try:
         with st.spinner('Submitting biomarkers...', show_time=True):
             patient_biomarkers_request = {
-                'biomarker_values': biomarker_values
+                'biomarker_value_unit': biomarker_value_unit
             }
             time.sleep(5)
             response = requests.post(
@@ -168,5 +194,5 @@ if submitted:
         st.session_state.biomarkers_loaded = False
         st.switch_page('./pages/6_Results.py')
     except requests.exceptions.ConnectionError:
-        st.error('Connection error. Please check your FastAPI server.')
+        st.error('Please check your internet connection or try again later.')
         st.stop()

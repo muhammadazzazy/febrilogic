@@ -14,7 +14,7 @@ class Biomarker(Base):
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     abbreviation = Column(String, nullable=False, unique=True, index=True)
     name = Column(String, nullable=True, unique=True)
-    unit = Column(String, nullable=False)
+    standard_unit = Column(String, nullable=False, index=True)
     reference_range = Column(String, nullable=False)
 
 
@@ -141,3 +141,20 @@ class User(Base):
                         server_default=func.now())
     hashed_password = Column(String, nullable=False)
     patients: Mapped[List['Patient']] = relationship(back_populates='user')
+
+
+class Unit(Base):
+    """Store unit information in the database."""
+    __tablename__ = 'units'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    symbol = Column(String, nullable=False, unique=True, index=True)
+
+
+biomarker_units = Table(
+    'biomarker_units',
+    Base.metadata,
+    Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('biomarker_id', ForeignKey('biomarkers.id'), nullable=False),
+    Column('unit_id', ForeignKey('units.id'), nullable=False),
+    Column('factor', Float, nullable=False, default=1.0)
+)

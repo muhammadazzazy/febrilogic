@@ -16,8 +16,8 @@ from apis.config import (
 )
 from apis.db.database import get_db
 from apis.models.model import (
-    Biomarker, Disease, Patient, Symptom,
-    patient_biomarkers, patient_negative_diseases, patient_symptoms
+    Biomarker, Disease, Patient, Symptom, Unit,
+    biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
 from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
 from apis.models.patient_request import PatientRequest
@@ -160,7 +160,7 @@ def upload_patient_negative_diseases(
 @api_router.post('/{patient_id}/biomarkers')
 def upload_patient_biomarkers(
     patient_id: int,
-    patient_biomarkers_request: PatientBiomarkersRequest,
+    request: PatientBiomarkersRequest,
     user: Annotated[dict, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
@@ -175,24 +175,32 @@ def upload_patient_biomarkers(
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to update this patient.')
 
-    biomarker_values: dict[str, float] = \
-        patient_biomarkers_request.biomarker_values
+    biomarker_value_unit: dict[str, tuple[float, str]
+                               ] = request.biomarker_value_unit
+    unit_symbols: list[str] = [unit for _,
+                               unit in biomarker_value_unit.values()]
+    unit_ids: dict[str, int] = {unit: id for id, unit in db.query(Unit.id, Unit.symbol).filter(
+        Unit.symbol.in_(unit_symbols)
+    ).all()}
+    biomarkers: list[str] = biomarker_value_unit.keys()
+    biomarker_ids: dict[str, int] = {abbreviation: id for abbreviation, id in db.query(
+        Biomarker.abbreviation, Biomarker.id).filter(Biomarker.abbreviation.in_(biomarkers)).all()}
 
-    abbreviations: list[str] = list(biomarker_values.keys())
-    biomarkers = db.query(Biomarker).filter(
-        Biomarker.abbreviation.in_(abbreviations)).all()
-    biomarker_map: dict[str, int] = {
-        b.abbreviation: b.id for b in biomarkers
-    }
-
-    data: list[dict[str, int | float | None]] = []
-    for abbreviation, value in biomarker_values.items():
-        biomarker_id = biomarker_map.get(abbreviation)
-        data.append({
-            'patient_id': patient_id,
-            'biomarker_id': biomarker_id,
-            'value': value
-        })
+    biomarker_factors: dict[str, float] = dict(db.query(Biomarker.abbreviation, biomarker_units.c.factor).join(
+        Biomarker, biomarker_units.c.biomarker_id == Biomarker.id).filter(
+            biomarker_units.c.unit_id.in_(unit_ids.values()),
+            biomarker_units.c.biomarker_id.in_(biomarker_ids.values())
+    ).all())
+    data: list[dict[str, Any]] = []
+    print(f'Biomarker factors: {biomarker_factors}')
+    for biomarker, (value, _) in biomarker_value_unit.items():
+        data.append(
+            {
+                'patient_id': patient_id,
+                'biomarker_id': biomarker_ids.get(biomarker),
+                'value': value * biomarker_factors.get(biomarker, 1.0)
+            }
+        )
     if not data:
         data.append({
             'patient_id': patient_id,

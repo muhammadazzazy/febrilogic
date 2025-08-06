@@ -4,4 +4,4 @@ from pydantic import BaseModel
 
 class PatientBiomarkersRequest(BaseModel):
     """Request model for patient biomarkers."""
-    biomarker_values: dict[str, float]
+    biomarker_value_unit: dict[str, tuple[float, str]]

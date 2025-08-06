@@ -53,17 +53,12 @@ if not st.session_state.get('diseases_loaded', False):
 diseases: list[str] = st.session_state.get('diseases', [])
 
 disease_set: set[str] = set()
-for disease in st.session_state.get('diseases', []):
-    disease_set.add(disease.replace(
-        ' (non-severe)', '').replace(' (severe)', ''))
-
-unique_diseases: list[str] = sorted(disease_set)
 
 
 def reset_button() -> None:
     """Reset the disease specific tests checkboxes."""
-    for unique_disease in unique_diseases:
-        st.session_state[f'{unique_disease}_checkbox'] = False
+    for disease in diseases:
+        st.session_state[f'{disease}_checkbox'] = False
 
 
 patient_id: int = st.session_state.get('patient_id')
@@ -86,7 +81,7 @@ with st.container(border=False):
 
 with st.container(border=True):
     cols = st.columns(2, border=False, gap='small')
-    for i, disease in enumerate(unique_diseases):
+    for i, disease in enumerate(diseases):
         cols[i % 2].checkbox(
             label=disease, key=f'{disease}_checkbox')
 
@@ -97,7 +92,7 @@ with st.container(border=True):
 
 checkboxes: dict[str, bool] = {
     disease: st.session_state.get(f'{disease}_checkbox', False)
-    for disease in unique_diseases
+    for disease in diseases
 }
 
 patient_id: int = st.session_state.get('patient_id')

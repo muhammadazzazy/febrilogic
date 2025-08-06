@@ -29,9 +29,6 @@ SECRET_KEY: Final[str] = os.environ.get('SECRET_KEY')
 ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = int(
     os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
 
-LOINC_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('LOINC_FILE'))
-
 SQLALCHEMY_DATABASE_URL: Final[str] = 'sqlite:///' + \
     str(BASE_DIR / os.environ.get('DATABASE_FILE'))
 
@@ -51,6 +48,12 @@ GROQ_MODEL: Final[str] = os.environ.get(
 
 GROQ_URL: Final[str] = os.environ.get(
     'GROQ_URL', 'https://api.groq.com/openai/v1/chat/completions')
+
+GROQ_CONNECT_TIMEOUT: Final[int] = int(
+    os.environ.get('GROQ_CONNECT_TIMEOUT', 5))
+
+GROQ_READ_TIMEOUT: Final[int] = int(
+    os.environ.get('GROQ_READ_TIMEOUT', 10))
 
 OPENROUTER_API_KEY: Final[str] = os.environ.get(
     'OPENROUTER_API_KEY')

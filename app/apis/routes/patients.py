@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 
 from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
-    GROQ_API_KEY, GROQ_MODEL, GROQ_URL,
-    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_READ_TIMEOUT, OPENROUTER_CONNECT_TIMEOUT
+    GROQ_API_KEY, GROQ_MODEL, GROQ_URL, GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT,
+    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT
 )
 from apis.db.database import get_db
 from apis.models.model import (
@@ -250,7 +250,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
         row.name for row in db.query(Disease.name)
         .join(patient_negative_diseases)
         .filter(patient_negative_diseases.c.patient_id == patient_id,
-                func.DATE(patient_negative_diseases.c.created_at) == func.DATE(latest_datetime)).all()
+                func.strftime('%Y-%m-%d %H:%M:%S', patient_negative_diseases.c.created_at) == func.strftime('%Y-%m-%d %H:%M:%S', latest_datetime)).all()
     ]
     print(f'Latest negative diseases: {negative_diseases}')
 
@@ -271,7 +271,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
         row.name for row in db.query(Symptom.name)
         .join(patient_symptoms)
         .filter(patient_symptoms.c.patient_id == patient_id,
-                func.DATE(patient_symptoms.c.created_at) == func.DATE(latest_datetime)).all()
+                func.strftime('%Y-%m-%d %H:%M:%S', patient_symptoms.c.created_at) == func.strftime('%Y-%m-%d %H:%M:%S', latest_datetime)).all()
     ]
     print(f'Latest positive symptoms: {positive_symptoms}')
     disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
@@ -298,9 +298,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     ).join(
         Biomarker, patient_biomarkers.c.biomarker_id == Biomarker.id).filter(
         patient_biomarkers.c.patient_id == patient_id,
-        func.DATE(patient_biomarkers.c.created_at) == func.DATE(
-            latest_datetime)
-    ).all()
+        func.strftime('%Y-%m-%d %H:%M:%S', patient_biomarkers.c.created_at) == func.strftime('%Y-%m-%d %H:%M:%S', latest_datetime)).all()
     print(f'Latest biomarkers: {biomarker_result}')
     biomarker_row: dict[str, float] = {
         row.abbreviation: row.value for row in biomarker_result}
@@ -382,7 +380,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
         ]
     }
     response = requests.post(url=GROQ_URL,
-                             headers=headers, data=json.dumps(data), timeout=(5, 10))
+                             headers=headers, data=json.dumps(data), timeout=(GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT))
     content: str = response.json().get('choices', [])[
         0].get('message', {}).get('content', '')
     return {

@@ -71,12 +71,12 @@ if submitted:
         styled_df = symptom_df.style.format({"Percentage (%)": "{:.2%}"}).background_gradient(
             subset=['Percentage (%)'], cmap='Reds')
         cols = st.columns(2, gap='medium')
-        cols[0].subheader('After Symptoms Only')
+        cols[0].subheader('After Symptoms')
         cols[0].dataframe(styled_df, use_container_width=True)
 
-        combined_df = DataFrame(biomarker_probabilities, columns=[
+        combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
             'Disease', 'Percentage (%)'])
-        combined_df = combined_df.sort_values(
+        combined_df: DataFrame = combined_df.sort_values(
             'Percentage (%)', ascending=False)
         cols[1].subheader('After Symptoms + Biomarkers')
         combined_df.index = range(1, len(combined_df) + 1)

@@ -33,7 +33,7 @@ def load_disease_data(*, filepath: str, negative_diseases: list[str]) \
     with open(filepath, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
-            disease_name = row['disease'].strip()
+            disease_name = row['disease'].strip().title()
             # Skip patient's negative diseases
             if disease_name in negative_diseases:
                 continue

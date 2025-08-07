@@ -33,7 +33,7 @@ else:
 
 st.header('ℹ️ Patient Information')
 
-cols = st.columns(2, gap='large', border=False)
+cols = st.columns(3, gap='small', border=False)
 cols[0].subheader(f"**Date:** {datetime.now().strftime('%d-%m-%Y')}")
 
 st.session_state.setdefault('patient_ids', [])
@@ -152,6 +152,7 @@ countries = st.session_state.get('countries', [])
 common_names: list[str] = sorted(
     [country['common_name'] for country in countries]
 )
+
 with st.form('patient_info_form'):
     columns = st.columns(2, gap='medium', border=True)
     patient_age: int = columns[0].number_input(label='Age',

@@ -1,5 +1,4 @@
 """Show the Login page for FebriLogic."""
-import time
 import re
 import requests
 from requests.exceptions import HTTPError
@@ -25,11 +24,10 @@ if st.session_state.get('token', ''):
     st.session_state.patients = []
     st.session_state.patient_ids = []
 
-st.session_state.token = ''
-controller.set('token', '')
-
 cols = st.columns(3, gap='large', border=False)
-with cols[1].container(border=True):
+center_col = cols[1]
+
+with center_col.form('login_form', border=True):
     inner_cols = st.columns(1, gap='large', border=False)
     with inner_cols[0]:
         st.text_input('Email', key='email',
@@ -38,12 +36,12 @@ with cols[1].container(border=True):
         st.text_input('Password', key='password', type='password',
                       placeholder='Enter your password')
     button_cols = st.columns(2, gap='small', border=False)
-    st.session_state.login = button_cols[0].button(
+    st.session_state.login = button_cols[0].form_submit_button(
         label='Login',
         use_container_width=True,
         icon='🔐'
     )
-    st.session_state.register = button_cols[1].button(
+    st.session_state.register = button_cols[1].form_submit_button(
         label='Register',
         use_container_width=True,
         icon='📝'
@@ -56,27 +54,24 @@ if st.session_state.get('login', False):
         missing_fields.append('Email')
     if not st.session_state.get('password', '').strip():
         missing_fields.append('Password')
-    cols = st.columns(3, gap='large', border=False)
     if missing_fields:
-        cols[1].error(
+        center_col.error(
             f'Please fill in the following fields: {", ".join(missing_fields)}'
         )
-        time.sleep(2)
-        st.rerun()
+        st.stop()
 
 if st.session_state.get('login', False) or st.session_state.get('register', False):
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', st.session_state.get('email', '')):
-        cols = st.columns(3, gap='large', border=False)
-        cols[1].error('Please enter a valid email address.')
-        time.sleep(2)
-        st.rerun()
+        center_col.error('Please enter a valid email address.')
+        st.stop()
 
 
 if st.session_state.get('login', False):
+    st.session_state.token = ''
+    controller.set('token', '')
     st.session_state.login = False
-    cols = st.columns(3, gap='large', border=False)
     try:
-        with cols[1]:
+        with center_col:
             with st.spinner('Logging in...', show_time=True):
                 response = requests.post(f'{FAST_API_BASE_URL}/auth/token',
                                          timeout=(FAST_API_CONNECT_TIMEOUT,
@@ -87,14 +82,14 @@ if st.session_state.get('login', False):
             token = response.json().get('access_token', '')
             st.session_state.token = token
             controller.set('token', token)
-        cols[1].success('Login successful!')
-        time.sleep(2)
         st.switch_page('./pages/2_Patient_Information.py')
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
-        cols[1].error(f"Login unsuccessful: {error_detail}")
+        center_col.error(f"Login unsuccessful: {error_detail}")
+        st.stop()
     except requests.exceptions.RequestException as e:
-        cols[1].error(f'Error connecting to the server: {e}')
+        center_col.error(f'Error connecting to the server: {e}')
+        st.stop()
 
 if st.session_state.get('register', False):
     st.session_state.login = True
@@ -103,19 +98,16 @@ if st.session_state.get('register', False):
         missing_fields.append('Email')
     if not st.session_state.get('password', '').strip():
         missing_fields.append('Password')
-    cols = st.columns(3, gap='large', border=False)
     if missing_fields:
-        cols[1].error(
+        center_col.error(
             f'Please fill in the following fields: {", ".join(missing_fields)}'
         )
-        time.sleep(2)
-        st.rerun()
+        st.stop()
 
 if st.session_state.get('register', False):
     st.session_state.register = False
-    cols = st.columns(3, gap='large', border=False)
     try:
-        with cols[1]:
+        with center_col:
             with st.spinner('Registering...', show_time=True):
                 response = requests.post(f'{FAST_API_BASE_URL}/auth',
                                          timeout=(FAST_API_CONNECT_TIMEOUT,
@@ -123,12 +115,12 @@ if st.session_state.get('register', False):
                                          json={'email': st.session_state.get('email', ''),
                                                'password': st.session_state.get('password', '')})
                 response.raise_for_status()
-        cols[1].success(
-            f'Verification email sent to {st.session_state.get('email', '')}.')
-        time.sleep(2)
-        st.rerun()
+        center_col.success(
+            f"Verification email sent to {st.session_state.get('email', '')}.")
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
-        cols[1].error(f"Registration unsuccessful: {error_detail}")
+        center_col.error(f"Registration unsuccessful: {error_detail}")
+        st.stop()
     except requests.exceptions.RequestException as e:
-        cols[1].error(f"Error connecting to the server: {e}")
+        center_col.error(f"Error connecting to the server: {e}")
+        st.stop()

@@ -1,7 +1,7 @@
 """Show Patient Information page for FebriLogic."""
 import time
 from datetime import datetime
-from typing import Final
+from typing import Any, Final
 
 import requests
 from requests.exceptions import HTTPError
@@ -18,8 +18,6 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-st.header('ℹ️ Patient Information')
-
 st.session_state.setdefault('patients_loaded', False)
 st.session_state.setdefault('countries_loaded', False)
 
@@ -32,14 +30,15 @@ else:
 
 if token:
     controller.set('token', token)
-
-
-if not token:
+else:
     st.error('Please log in to access the symptom checker.')
     st.stop()
 
 if 'patient_info' not in st.session_state:
     st.session_state.submitted = False
+
+
+st.header('ℹ️ Patient Information')
 
 cols = st.columns(2, gap='large', border=False)
 cols[0].subheader(f"**Date:** {datetime.now().strftime('%d-%m-%Y')}")
@@ -118,7 +117,8 @@ if patient_id != last_patient_id:
              int(patient_id)), None
         )
         if selected:
-            st.session_state.patient_country = PLACEHOLDER
+            st.session_state.patient_country = st.session_state.countries[selected.get(
+                'country_id')-1]['common_name']
             st.session_state.patient_city = selected.get('city', '')
             st.session_state.patient_age = selected['age']
             st.session_state.patient_race = selected.get('race', PLACEHOLDER)

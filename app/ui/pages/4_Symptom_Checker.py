@@ -16,11 +16,16 @@ st.set_page_config(
 )
 
 st.session_state.setdefault('symptoms_loaded', False)
-token: str = controller.get('token')
-controller.set('token', token)
-st.session_state.setdefault('token', token)
+if 'token' not in st.session_state:
+    token: str = controller.get('token')
+    if token:
+        st.session_state['token'] = token
+else:
+    token: str = st.session_state['token']
 
-if not token:
+if token:
+    controller.set('token', token)
+else:
     st.error('Please log in to access the symptom checker.')
     st.stop()
 

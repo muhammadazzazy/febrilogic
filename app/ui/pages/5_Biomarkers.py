@@ -26,7 +26,9 @@ else:
 
 if token:
     controller.set('token', token)
-
+else:
+    st.error('Please log in to access the symptom checker.')
+    st.stop()
 
 if not st.session_state.get('patient_ids', []):
     st.session_state.diseases_loaded = False

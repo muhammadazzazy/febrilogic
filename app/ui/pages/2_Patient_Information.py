@@ -18,9 +18,6 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-st.session_state.setdefault('patients_loaded', False)
-st.session_state.setdefault('countries_loaded', False)
-
 if 'token' not in st.session_state:
     token: str = controller.get('token')
     if token:
@@ -31,57 +28,71 @@ else:
 if token:
     controller.set('token', token)
 else:
-    st.error('Please log in to access the symptom checker.')
+    st.error('Please log in to access the patient information.')
     st.stop()
-
-if 'patient_info' not in st.session_state:
-    st.session_state.submitted = False
-
 
 st.header('ℹ️ Patient Information')
 
 cols = st.columns(2, gap='large', border=False)
 cols[0].subheader(f"**Date:** {datetime.now().strftime('%d-%m-%Y')}")
 
+st.session_state.setdefault('patient_ids', [])
+st.session_state.setdefault('patients_loaded', False)
+st.session_state.setdefault('countries_loaded', False)
+
+if 'patient_info' not in st.session_state:
+    st.session_state.submitted = False
+
+
+@st.cache_data(show_spinner=False, ttl=1)
+def get_patient_info() -> list[dict[str, Any]]:
+    """Fetch patient information from the FastAPI server."""
+    try:
+        response = requests.get(
+            headers={'Authorization': f'Bearer {token}'},
+            url=f'{FAST_API_BASE_URL}/api/patients',
+            timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+        )
+        response.raise_for_status()
+        return response.json().get('patients', [])
+    except HTTPError:
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error loading patient information: {error_detail}')
+        st.stop()
+    except requests.exceptions.ConnectionError:
+        st.error('Connection error. Please check your FastAPI server.')
+        st.stop()
+
 
 if not st.session_state.get('patients_loaded', False):
     with st.spinner('Loading patient information...', show_time=True):
-        try:
-            response = requests.get(
-                headers={'Authorization': f'Bearer {token}'},
-                url=f'{FAST_API_BASE_URL}/api/patients',
-                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
-            )
-            response.raise_for_status()
-            st.session_state.patients = response.json().get('patients', [])
-            st.session_state.patients_loaded = True
-        except HTTPError:
-            error_detail = response.json().get('detail', 'Unknown error')
-            st.error(f'Error loading patient information: {error_detail}')
-            st.stop()
-        except requests.exceptions.ConnectionError:
-            st.error('Connection error. Please check your FastAPI server.')
-            st.stop()
+        st.session_state.patients = get_patient_info()
+        st.session_state.patients_loaded = True
+
+
+def get_countries() -> list[dict[str, Any]]:
+    """Fetch country information from the FastAPI server."""
+    try:
+        response = requests.get(
+            headers={'Authorization': f'Bearer {token}'},
+            url=f'{FAST_API_BASE_URL}/api/countries',
+            timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+        )
+        response.raise_for_status()
+        return response.json().get('countries', [])
+    except HTTPError:
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error loading country information: {error_detail}')
+        st.stop()
+    except requests.exceptions.ConnectionError:
+        st.error('Connection error. Please check your internet connection.')
+        st.stop()
 
 
 if not st.session_state.get('countries_loaded', False):
     with st.spinner('Loading country information...', show_time=True):
-        try:
-            response = requests.get(
-                headers={'Authorization': f'Bearer {token}'},
-                url=f'{FAST_API_BASE_URL}/api/countries',
-                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
-            )
-            response.raise_for_status()
-            st.session_state.countries = response.json().get('countries', [])
-            st.session_state.countries_loaded = True
-        except HTTPError:
-            error_detail = response.json().get('detail', 'Unknown error')
-            st.error(f'Error loading country information: {error_detail}')
-            st.stop()
-        except requests.exceptions.ConnectionError:
-            st.error('Connection error. Please check your internet connection.')
-            st.stop()
+        st.session_state.countries = get_countries()
+        st.session_state.countries_loaded = True
 
 PLACEHOLDER: Final[str] = 'Please select'
 
@@ -199,6 +210,35 @@ for country in countries:
         country_id = country['id']
         break
 
+
+@st.cache_data(show_spinner=False)
+def submit_patient_info(patient_id: int, body: dict[str, Any]) -> None:
+    """Submit patient information to the FastAPI server."""
+    try:
+        with st.spinner('Submitting patient information...', show_time=True):
+            response = requests.post(
+                url=url,
+                headers={'Authorization': f'Bearer {token}'},
+                json=body,
+                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
+            )
+            response.raise_for_status()
+        st.success('Patient information submitted successfully.', icon='✅')
+        patient_id: int = response.json().get('patient_id')
+        st.session_state.patient_id = patient_id
+        if patient_id not in st.session_state.patient_ids:
+            st.session_state.patient_ids.append(patient_id)
+        time.sleep(1.5)
+        st.switch_page('./pages/3_Disease-Specific_Tests.py')
+    except requests.exceptions.ConnectionError:
+        st.error('Please check your internet connection or try again later.')
+        st.stop()
+    except HTTPError:
+        error_detail = response.json().get('detail', 'Unknown error')
+        st.error(f'Error submitting patient information: {error_detail}')
+        st.stop()
+
+
 if st.session_state.get('ready', False):
     st.session_state.ready = False
     st.session_state.patients_loaded = False
@@ -224,26 +264,4 @@ if st.session_state.get('ready', False):
             st.warning('No changes detected in patient information.')
             time.sleep(1.5)
             st.switch_page('./pages/3_Disease-Specific_Tests.py')
-    try:
-        with st.spinner('Submitting patient information...', show_time=True):
-            response = requests.post(
-                url=url,
-                headers={'Authorization': f'Bearer {token}'},
-                json=body,
-                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
-            )
-            response.raise_for_status()
-        st.success('Patient information submitted successfully.', icon='✅')
-        patient_id: int = response.json().get('patient_id')
-        st.session_state.patient_id = patient_id
-        if patient_id not in st.session_state.patient_ids:
-            st.session_state.patient_ids.append(patient_id)
-        time.sleep(1.5)
-        st.switch_page('./pages/3_Disease-Specific_Tests.py')
-    except requests.exceptions.ConnectionError:
-        st.error('Please check your internet connection or try again later.')
-        st.stop()
-    except HTTPError:
-        error_detail = response.json().get('detail', 'Unknown error')
-        st.error(f'Error submitting patient information: {error_detail}')
-        st.stop()
+    submit_patient_info(patient_id, body)

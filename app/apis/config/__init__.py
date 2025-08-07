@@ -50,10 +50,10 @@ GROQ_URL: Final[str] = os.environ.get(
     'GROQ_URL', 'https://api.groq.com/openai/v1/chat/completions')
 
 GROQ_CONNECT_TIMEOUT: Final[int] = int(
-    os.environ.get('GROQ_CONNECT_TIMEOUT', 5))
+    os.environ.get('GROQ_CONNECT_TIMEOUT', 10))
 
 GROQ_READ_TIMEOUT: Final[int] = int(
-    os.environ.get('GROQ_READ_TIMEOUT', 10))
+    os.environ.get('GROQ_READ_TIMEOUT', 15))
 
 OPENROUTER_API_KEY: Final[str] = os.environ.get(
     'OPENROUTER_API_KEY')

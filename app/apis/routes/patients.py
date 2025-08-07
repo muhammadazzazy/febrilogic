@@ -363,10 +363,10 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
         patient_negative_diseases).filter(
         patient_negative_diseases.c.patient_id == patient_id,
         func.strftime(
-            '%Y-%m-%d',
+            '%Y-%m-%d %H:%M:%S',
             patient_negative_diseases.c.created_at
         ) == func.strftime(
-            '%Y-%m-%d', latest_datetime
+            '%Y-%m-%d %H:%M:%S', latest_datetime
         )).all()
 
     latest_datetime = db.execute(
@@ -379,9 +379,9 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
     symptoms: list[str] = db.query(Symptom.name).join(patient_symptoms).filter(
         patient_symptoms.c.patient_id == patient_id,
         func.strftime(
-            '%Y-%m-%d', patient_symptoms.c.created_at
+            '%%Y-%m-%d %H:%M:%S', patient_symptoms.c.created_at
         ) == func.strftime(
-            '%Y-%m-%d', latest_datetime
+            '%%Y-%m-%d %H:%M:%S', latest_datetime
         )
     ).all()
 
@@ -395,8 +395,8 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
         patient_biomarkers.c.value, 2)).join(
         patient_biomarkers).filter(
         patient_biomarkers.c.patient_id == patient_id,
-        func.strftime('%Y-%m-%d', patient_biomarkers.c.created_at) == func.strftime(
-            '%Y-%m-%d', latest_datetime
+        func.strftime('%Y-%m-%d %H:%M:%S', patient_biomarkers.c.created_at) == func.strftime(
+            '%Y-%m-%d %H:%M:%S', latest_datetime
         )).all()
     return {
         'negative_diseases': [d[0] for d in negative_diseases],

@@ -27,7 +27,7 @@ else:
 if token:
     controller.set('token', token)
 else:
-    st.error('Please log in to access the symptom checker.')
+    st.error('Please log in to access the biomarkers.')
     st.stop()
 
 if not st.session_state.get('patient_ids', []):

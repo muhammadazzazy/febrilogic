@@ -1,6 +1,6 @@
-"""Show the login page for FebriLogic."""
+"""Show the Login page for FebriLogic."""
 import time
-
+import re
 import requests
 from requests.exceptions import HTTPError
 
@@ -20,22 +20,30 @@ st.title('🔑 Login')
 st.session_state.setdefault('login', False)
 st.session_state.setdefault('register', False)
 
+if st.session_state.get('token', ''):
+    st.session_state.patients_loaded = False
+    st.session_state.patients = []
+    st.session_state.patient_ids = []
+
+st.session_state.token = ''
+controller.set('token', '')
+
 cols = st.columns(3, gap='large', border=False)
-with cols[1].form('login_form', clear_on_submit=True, ):
-    cols = st.columns(1, gap='large', border=False)
-    with cols[0]:
+with cols[1].container(border=True):
+    inner_cols = st.columns(1, gap='large', border=False)
+    with inner_cols[0]:
         st.text_input('Email', key='email',
                       placeholder='Enter your email')
-    with cols[0]:
+    with inner_cols[0]:
         st.text_input('Password', key='password', type='password',
                       placeholder='Enter your password')
-    cols = st.columns(2, gap='small', border=False)
-    st.session_state.login = cols[0].form_submit_button(
+    button_cols = st.columns(2, gap='small', border=False)
+    st.session_state.login = button_cols[0].button(
         label='Login',
         use_container_width=True,
         icon='🔐'
     )
-    st.session_state.register = cols[1].form_submit_button(
+    st.session_state.register = button_cols[1].button(
         label='Register',
         use_container_width=True,
         icon='📝'
@@ -56,6 +64,14 @@ if st.session_state.get('login', False):
         time.sleep(2)
         st.rerun()
 
+if st.session_state.get('login', False) or st.session_state.get('register', False):
+    if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', st.session_state.get('email', '')):
+        cols = st.columns(3, gap='large', border=False)
+        cols[1].error('Please enter a valid email address.')
+        time.sleep(2)
+        st.rerun()
+
+
 if st.session_state.get('login', False):
     st.session_state.login = False
     cols = st.columns(3, gap='large', border=False)
@@ -68,8 +84,9 @@ if st.session_state.get('login', False):
                                          data={'username': st.session_state.get('email', ''),
                                                'password': st.session_state.get('password', '')})
                 response.raise_for_status()
-                token = response.json().get('access_token', '')
-                controller.set('token', token)
+            token = response.json().get('access_token', '')
+            st.session_state.token = token
+            controller.set('token', token)
             cols[1].success('Login successful!')
             time.sleep(2)
         st.switch_page('./pages/2_Patient_Information.py')
@@ -106,12 +123,10 @@ if st.session_state.get('register', False):
                                          json={'email': st.session_state.get('email', ''),
                                                'password': st.session_state.get('password', '')})
                 response.raise_for_status()
-                token = response.json().get('access_token', '')
-                st.write('Token:', token)
-                response.raise_for_status()
-            cols[1].success(response.json().get('message'))
-            time.sleep(2)
-            st.rerun()
+        cols[1].success(
+            f'Verification email sent to {st.session_state.get('email', '')}.')
+        time.sleep(2)
+        st.rerun()
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
         cols[1].error(f"Registration unsuccessful: {error_detail}")

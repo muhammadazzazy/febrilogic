@@ -212,24 +212,19 @@ for country in countries:
 
 
 @st.cache_data(show_spinner=False)
-def submit_patient_info(patient_id: int, body: dict[str, Any]) -> None:
+def submit_patient_info(url: str, payload: dict[str, Any]) -> None:
     """Submit patient information to the FastAPI server."""
     try:
         with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(
                 url=url,
                 headers={'Authorization': f'Bearer {token}'},
-                json=body,
+                json=payload,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()
-        st.success('Patient information submitted successfully.', icon='✅')
-        patient_id: int = response.json().get('patient_id')
-        st.session_state.patient_id = patient_id
-        if patient_id not in st.session_state.patient_ids:
-            st.session_state.patient_ids.append(patient_id)
-        time.sleep(1.5)
-        st.switch_page('./pages/3_Disease-Specific_Tests.py')
+        case_id: int = response.json().get('patient_id')
+        return case_id
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()
@@ -249,7 +244,7 @@ if st.session_state.get('ready', False):
         'race': str(patient_race),
         'sex': str(patient_sex)
     }
-    url: str = f'{FAST_API_BASE_URL}/api/patients'
+    route: str = f'{FAST_API_BASE_URL}/api/patients'
     current_patient = next(
         (patient for patient in patients if patient['id'] == patient_id), None)
     if current_patient:
@@ -259,9 +254,15 @@ if st.session_state.get('ready', False):
                 or current_patient['race'] != patient_race \
                 or current_patient['sex'] != patient_sex:
             body['id'] = int(patient_id)
-            url += f'/{patient_id}'
+            route += f'/{patient_id}'
         else:
-            st.warning('No changes detected in patient information.')
+            st.warning('No changes detected in patient information.',
+                       icon='⚠️')
             time.sleep(1.5)
             st.switch_page('./pages/3_Disease-Specific_Tests.py')
-    submit_patient_info(patient_id, body)
+    patient_id: int = submit_patient_info(route, body)
+    st.session_state.patient_id = patient_id
+    st.session_state.patient_ids.append(patient_id)
+    st.success('Patient information submitted successfully.', icon='✅')
+    time.sleep(1.5)
+    st.switch_page('./pages/3_Disease-Specific_Tests.py')

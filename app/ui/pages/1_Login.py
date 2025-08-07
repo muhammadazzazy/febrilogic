@@ -87,14 +87,14 @@ if st.session_state.get('login', False):
             token = response.json().get('access_token', '')
             st.session_state.token = token
             controller.set('token', token)
-            cols[1].success('Login successful!')
-            time.sleep(2)
+        cols[1].success('Login successful!')
+        time.sleep(2)
         st.switch_page('./pages/2_Patient_Information.py')
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
         cols[1].error(f"Login unsuccessful: {error_detail}")
     except requests.exceptions.RequestException as e:
-        st.error(f'Error connecting to the server: {e}')
+        cols[1].error(f'Error connecting to the server: {e}')
 
 if st.session_state.get('register', False):
     st.session_state.login = True
@@ -131,4 +131,4 @@ if st.session_state.get('register', False):
         error_detail = response.json().get('detail', 'Unknown error')
         cols[1].error(f"Registration unsuccessful: {error_detail}")
     except requests.exceptions.RequestException as e:
-        st.error(f"Error connecting to the server: {e}")
+        cols[1].error(f"Error connecting to the server: {e}")

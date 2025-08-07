@@ -69,3 +69,6 @@ OPENROUTER_CONNECT_TIMEOUT: Final[int] = int(
 
 OPENROUTER_READ_TIMEOUT: Final[int] = int(
     os.environ.get('OPENROUTER_READ_TIMEOUT', 10))
+
+PROMPT_TEMPLATE_PATH: Final[Path] = BASE_DIR / \
+    Path(os.environ.get('PROMPT_TEMPLATE_PATH'))

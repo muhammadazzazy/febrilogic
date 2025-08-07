@@ -5,6 +5,7 @@ import json
 import pandas as pd
 import requests
 from fastapi import APIRouter, Depends, HTTPException
+from jinja2 import Template
 from pandas import DataFrame
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
@@ -12,7 +13,8 @@ from sqlalchemy.orm import Session
 from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
     GROQ_API_KEY, GROQ_MODEL, GROQ_URL, GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT,
-    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT
+    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
+    PROMPT_TEMPLATE_PATH
 )
 from apis.db.database import get_db
 from apis.models.model import (
@@ -348,9 +350,65 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     }
 
 
+def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
+    """Get the latest lab results for a patient."""
+    latest_datetime = db.execute(
+        select(patient_negative_diseases.c.created_at)
+        .where(patient_negative_diseases.c.patient_id == patient_id)
+        .order_by(patient_negative_diseases.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+    negative_diseases: list[str] = db.query(Disease.name).join(
+        patient_negative_diseases).filter(
+        patient_negative_diseases.c.patient_id == patient_id,
+        func.strftime(
+            '%Y-%m-%d',
+            patient_negative_diseases.c.created_at
+        ) == func.strftime(
+            '%Y-%m-%d', latest_datetime
+        )).all()
+
+    latest_datetime = db.execute(
+        select(patient_symptoms.c.created_at)
+        .where(patient_symptoms.c.patient_id == patient_id)
+        .order_by(patient_symptoms.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+    symptoms: list[str] = db.query(Symptom.name).join(patient_symptoms).filter(
+        patient_symptoms.c.patient_id == patient_id,
+        func.strftime(
+            '%Y-%m-%d', patient_symptoms.c.created_at
+        ) == func.strftime(
+            '%Y-%m-%d', latest_datetime
+        )
+    ).all()
+
+    latest_datetime = db.execute(
+        select(patient_biomarkers.c.created_at)
+        .where(patient_biomarkers.c.patient_id == patient_id)
+        .order_by(patient_biomarkers.c.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    biomarkers: list[tuple[str, float]] = db.query(Biomarker.abbreviation, func.round(
+        patient_biomarkers.c.value, 2)).join(
+        patient_biomarkers).filter(
+        patient_biomarkers.c.patient_id == patient_id,
+        func.strftime('%Y-%m-%d', patient_biomarkers.c.created_at) == func.strftime(
+            '%Y-%m-%d', latest_datetime
+        )).all()
+    return {
+        'negative_diseases': [d[0] for d in negative_diseases],
+        'symptoms': [s[0] for s in symptoms],
+        'biomarker_values': {b[0]: b[1] for b in biomarkers}
+    }
+
+
 @api_router.post('/{patient_id}/generate/openrouter')
 def generate_openrouter(patient_id: int, disease_probabilities: dict,
-                        user: Annotated[dict: [str, Any], Depends(get_current_user)]) -> dict[str, str]:
+                        user: Annotated[dict: [str, Any], Depends(get_current_user)],
+                        db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response based on calculated disease probabilities."""
     if not user:
         raise HTTPException(status_code=401, detail='Authentication failed.')
@@ -360,18 +418,29 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
         'HTTP-Referer': 'https://febrilogic.com',
         'X-Title': 'FebriLogic'
     }
-    symptom_probabilities: list[tuple[str, float]] = disease_probabilities.get(
-        'symptom_probabilities', [])
+
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
+
+    lab_results = get_latest_lab_results(patient_id, db)
+    negative_diseases: list[str] = lab_results.get('negative_diseases', [])
+    symptoms: list[str] = lab_results.get('symptoms', [])
+    biomarkers: dict[str, float] = lab_results.get('biomarker_values', {})
+    template: Template = Template(PROMPT_TEMPLATE_PATH.read_text())
+    dynamic_data: dict[str, Any] = {
+        'patient_id': patient_id,
+        'negative_diseases': negative_diseases,
+        'symptoms': symptoms,
+        'biomarker_values': biomarkers,
+        'biomarker_probabilities': biomarker_probabilities[:3]
+    }
+    rendered_prompt: str = template.render(**dynamic_data)
     data: dict[str, str] = {
         'model': OPENROUTER_MODEL,
         'messages': [
             {
                 'role': 'user',
-                'content': f"Given the following disease probabilities for Patient {patient_id} (ratios):\n{json.dumps(symptom_probabilities)}\n\n"
-                f"and the following biomarker probabilities (ratios):\n{json.dumps(biomarker_probabilities)}\n\n"
-                "What are the top 3 most likely diseases (percentages)? Arrange the top 3 diseases in a numbered list from 1 to 3. Use the biomarker probabilities to make final ranking."
+                'content': rendered_prompt
             }
         ]
     }
@@ -379,15 +448,15 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
                              headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
     choices: list[dict[str, Any]] = response.json().get('choices', [])
     if not choices:
-        raise HTTPException(
-            status_code=500, detail='No choices returned from OpenRouter API.')
+        raise HTTPException(status_code=500,
+                            detail='No choices returned from OpenRouter API.')
     if 'message' not in choices[0]:
-        raise HTTPException(
-            status_code=500, detail='No message in the response from OpenRouter API.')
+        raise HTTPException(status_code=500,
+                            detail='No message in the response from OpenRouter API.')
     message: dict[str, Any] = choices[0].get('message', {})
     if 'content' not in message:
-        raise HTTPException(
-            status_code=500, detail='No content in the response from OpenRouter API.')
+        raise HTTPException(status_code=500,
+                            detail='No content in the response from OpenRouter API.')
     content = message.get('content', '')
     return {
         'content': content
@@ -396,41 +465,53 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
 
 @api_router.post('/{patient_id}/generate/groq')
 def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
-                  user: Annotated[dict, Depends(get_current_user)]) -> dict[str, str]:
+                  user: Annotated[dict, Depends(get_current_user)],
+                  db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response using Groq."""
     if not user:
         raise HTTPException(status_code=401, detail='Authentication failed.')
+
     headers: dict[str, str] = {'Authorization': f'Bearer {GROQ_API_KEY}',
                                'Content-Type': 'application/json'}
 
-    symptom_probabilities: list[tuple[str, float]] = disease_probabilities.get(
-        'symptom_probabilities', [])
+    lab_results = get_latest_lab_results(patient_id, db)
+    negative_diseases = lab_results.get('negative_diseases', [])
+    symptoms = lab_results.get('symptoms', [])
+    biomarkers = lab_results.get('biomarker_values', {})
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
-    data: dict[str, str] = {
+    template: Template = Template(PROMPT_TEMPLATE_PATH.read_text())
+    dynamic_data: dict[str, Any] = {
+        'patient_id': patient_id,
+        'negative_diseases': negative_diseases,
+        'symptoms': symptoms,
+        'biomarker_values': biomarkers,
+        'biomarker_probabilities': biomarker_probabilities[:3]
+    }
+    rendered_prompt: str = template.render(**dynamic_data)
+    print(f'Rendered prompt: {rendered_prompt}')
+    data: dict[str, str | list[dict[str, str]]] = {
         'model': GROQ_MODEL,
         'messages': [
             {
                 'role': 'user',
-                'content': f"Given the following disease probabilities for Patient {patient_id} (ratios):\n{json.dumps(symptom_probabilities)}\n\n"
-                f"and the following biomarker probabilities (ratios):\n{json.dumps(biomarker_probabilities)}\n\n"
-                "What are the top 3 most likely diseases (percentages)? Arrange the top 3 diseases in a numbered list from 1 to 3."
+                'content': rendered_prompt
             }
         ]
     }
-    response = requests.post(url=GROQ_URL,
-                             headers=headers, data=json.dumps(data), timeout=(GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT))
+    response = requests.post(url=GROQ_URL, headers=headers,
+                             data=json.dumps(data), timeout=(GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT))
     choices: list[dict[str, Any]] = response.json().get('choices', [])
     if not choices:
-        raise HTTPException(
-            status_code=500, detail='No choices returned from Groq API.')
+        raise HTTPException(status_code=500,
+                            detail='No choices returned from Groq API.')
     if 'message' not in choices[0]:
-        raise HTTPException(
-            status_code=500, detail='No message in the response from Groq API.')
+        raise HTTPException(status_code=500,
+                            detail='No message in the response from Groq API.')
     message: dict[str, Any] = choices[0].get('message', {})
     if 'content' not in message:
-        raise HTTPException(
-            status_code=500, detail='No content in the response from Groq API.')
+        raise HTTPException(status_code=500,
+                            detail='No content in the response from Groq API.')
     content: str = message.get('content', '')
     return {
         'content': content

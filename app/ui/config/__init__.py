@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Final
 
 from dotenv import load_dotenv
+from streamlit_cookies_controller import CookieController
+
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
@@ -15,3 +17,5 @@ FAST_API_CONNECT_TIMEOUT: Final[int] = int(os.environ.get(
 
 FAST_API_READ_TIMEOUT: Final[int] = int(os.environ.get(
     'FAST_API_READ_TIMEOUT', 10))
+
+controller = CookieController()

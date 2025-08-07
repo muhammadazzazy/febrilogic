@@ -4,25 +4,29 @@ import time
 import requests
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 st.set_page_config(
     page_title='Disease Specific Tests',
     page_icon=':material/lab_panel:',
 )
 
-if not st.session_state.get('token', ''):
-    st.error('Please log in to access disease specific tests.')
-    st.session_state.diseases_loaded = False
-    st.session_state.diseases = []
-    st.session_state.patient_ids = []
-    st.stop()
+if 'token' not in st.session_state:
+    token: str = controller.get('token')
+    if token:
+        st.session_state['token'] = token
+else:
+    token: str = st.session_state['token']
+
+if token:
+    controller.set('token', token)
 
 if not st.session_state.get('patient_ids', []):
-    st.error('No patients available. Please add a patient first.')
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
-    st.stop()
+    st.error('No patients available. Please add a patient first.')
+    time.sleep(2)
+    st.switch_page('./pages/2_Patient_Information.py')
 
 if st.session_state.get('patient_id') == 0:
     st.error('Please select a patient to proceed.')
@@ -42,7 +46,7 @@ if not st.session_state.get('diseases_loaded', False):
             response = requests.get(url=f'{FAST_API_BASE_URL}/api/diseases',
                                     timeout=(FAST_API_CONNECT_TIMEOUT,
                                              FAST_API_READ_TIMEOUT),
-                                    headers={'Authorization': f'Bearer {st.session_state.token}'})
+                                    headers={'Authorization': f'Bearer {token}'})
             response.raise_for_status()
         st.session_state.diseases = response.json().get('diseases', [])
         st.session_state.diseases_loaded = True
@@ -106,7 +110,7 @@ if submitted:
                 json={
                     'negative_diseases': negative_diseases
                 },
-                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                headers={'Authorization': f'Bearer {token}'},
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
             response.raise_for_status()

@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 st.set_page_config(
     page_title='Symptom Checker',
@@ -15,17 +15,21 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-st.session_state.setdefault('token', '')
-
 st.session_state.setdefault('symptoms_loaded', False)
+token: str = controller.get('token')
+controller.set('token', token)
+st.session_state.setdefault('token', token)
 
-if not st.session_state.get('token', ''):
-    st.error('Please log in to access patient symptoms.')
+if not token:
+    st.error('Please log in to access the symptom checker.')
     st.stop()
 
-if not st.session_state.get('patient_ids'):
+if not st.session_state.get('patient_ids', []):
+    st.session_state.diseases_loaded = False
+    st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
-    st.stop()
+    time.sleep(2)
+    st.switch_page('./pages/2_Patient_Information.py')
 
 if st.session_state.get('patient_id') == 0:
     st.error('Please select a patient to proceed.')
@@ -65,7 +69,7 @@ cols[4].button(
 if not st.session_state.get('symptoms_loaded', False):
     try:
         with st.spinner('Loading symptom metadata...', show_time=True):
-            response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
+            response = requests.get(headers={'Authorization': f'Bearer {token}'},
                                     url=f'{FAST_API_BASE_URL}/api/symptoms/categories-definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
@@ -142,7 +146,7 @@ if st.session_state.get('ready', False):
         st.empty()
         with st.spinner('Submitting patient symptoms...', show_time=True):
             response = requests.post(
-                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                headers={'Authorization': f'Bearer {token}'},
                 url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/symptoms',
                 json=symptom_request,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)

@@ -5,7 +5,7 @@ import requests
 from requests.exceptions import HTTPError
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 st.set_page_config(
     page_title='Biomarkers',
@@ -14,19 +14,26 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-st.session_state.setdefault('token', '')
-
 st.session_state.setdefault('biomarkers_loaded', False)
 st.session_state.setdefault('biomarker_units_loaded', False)
 
-if not st.session_state.get('token', ''):
-    st.error('Please log in to access patient biomarkers.')
-    st.stop()
+if 'token' not in st.session_state:
+    token: str = controller.get('token')
+    if token:
+        st.session_state['token'] = token
+else:
+    token: str = st.session_state['token']
+
+if token:
+    controller.set('token', token)
 
 
-if not st.session_state.get('patient_ids'):
+if not st.session_state.get('patient_ids', []):
+    st.session_state.diseases_loaded = False
+    st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
-    st.stop()
+    time.sleep(2)
+    st.switch_page('./pages/2_Patient_Information.py')
 
 
 if st.session_state.get('patient_id') == 0:
@@ -38,7 +45,7 @@ st.title('🔬 Biomarkers')
 if not st.session_state.biomarkers_loaded:
     try:
         with st.spinner('Loading biomarker metadata...', show_time=True):
-            response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
+            response = requests.get(headers={'Authorization': f'Bearer {token}'},
                                     url=f'{FAST_API_BASE_URL}/api/biomarkers',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
@@ -57,7 +64,7 @@ if not st.session_state.biomarkers_loaded:
 if not st.session_state.biomarker_units_loaded:
     try:
         with st.spinner('Loading biomarker units...', show_time=True):
-            response = requests.get(headers={'Authorization': f'Bearer {st.session_state.token}'},
+            response = requests.get(headers={'Authorization': f'Bearer {token}'},
                                     url=f'{FAST_API_BASE_URL}/api/biomarkers/units',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
@@ -184,7 +191,7 @@ if submitted:
             time.sleep(5)
             response = requests.post(
                 json=patient_biomarkers_request,
-                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                headers={'Authorization': f'Bearer {token}'},
                 url=f"{FAST_API_BASE_URL}/api/patients/{patient_id}/biomarkers",
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )

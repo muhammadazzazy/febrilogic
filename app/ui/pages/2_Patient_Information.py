@@ -8,7 +8,7 @@ from requests.exceptions import HTTPError
 
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 
 st.set_page_config(
@@ -18,36 +18,38 @@ st.set_page_config(
     initial_sidebar_state='expanded'
 )
 
-st.session_state.setdefault('token', '')
+st.header('ℹ️ Patient Information')
+
 st.session_state.setdefault('patients_loaded', False)
 st.session_state.setdefault('countries_loaded', False)
 
-if not st.session_state.get('token', ''):
-    st.error('Please log in to access patient information.')
-    st.session_state.patients_loaded = False
-    st.session_state.countries_loaded = False
-    st.session_state.patients = []
-    st.session_state.countries = []
-    st.session_state.patient_id = 0
-    st.session_state.patient_age = 0
-    st.session_state.patient_sex = ''
-    st.session_state.patient_race = ''
+if 'token' not in st.session_state:
+    token: str = controller.get('token')
+    if token:
+        st.session_state['token'] = token
+else:
+    token: str = st.session_state['token']
+
+if token:
+    controller.set('token', token)
+
+
+if not token:
+    st.error('Please log in to access the symptom checker.')
     st.stop()
 
 if 'patient_info' not in st.session_state:
     st.session_state.submitted = False
 
-
-st.header('ℹ️ Patient Information')
-
 cols = st.columns(2, gap='large', border=False)
 cols[0].subheader(f"**Date:** {datetime.now().strftime('%d-%m-%Y')}")
+
 
 if not st.session_state.get('patients_loaded', False):
     with st.spinner('Loading patient information...', show_time=True):
         try:
             response = requests.get(
-                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                headers={'Authorization': f'Bearer {token}'},
                 url=f'{FAST_API_BASE_URL}/api/patients',
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
@@ -67,7 +69,7 @@ if not st.session_state.get('countries_loaded', False):
     with st.spinner('Loading country information...', show_time=True):
         try:
             response = requests.get(
-                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                headers={'Authorization': f'Bearer {token}'},
                 url=f'{FAST_API_BASE_URL}/api/countries',
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )
@@ -226,7 +228,7 @@ if st.session_state.get('ready', False):
         with st.spinner('Submitting patient information...', show_time=True):
             response = requests.post(
                 url=url,
-                headers={'Authorization': f'Bearer {st.session_state.token}'},
+                headers={'Authorization': f'Bearer {token}'},
                 json=body,
                 timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
             )

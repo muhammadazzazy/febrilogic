@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError
 
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 st.set_page_config(
     page_title='Login',
@@ -17,10 +17,6 @@ st.set_page_config(
 
 st.title('🔑 Login')
 
-if 'token' in st.session_state:
-    st.session_state['token'] = ''
-
-st.session_state.setdefault('token', '')
 st.session_state.setdefault('login', False)
 st.session_state.setdefault('register', False)
 
@@ -72,7 +68,8 @@ if st.session_state.get('login', False):
                                          data={'username': st.session_state.get('email', ''),
                                                'password': st.session_state.get('password', '')})
                 response.raise_for_status()
-                st.session_state.token = response.json().get('access_token', '')
+                token = response.json().get('access_token', '')
+                controller.set('token', token)
             cols[1].success('Login successful!')
             time.sleep(2)
         st.switch_page('./pages/2_Patient_Information.py')
@@ -109,7 +106,8 @@ if st.session_state.get('register', False):
                                          json={'email': st.session_state.get('email', ''),
                                                'password': st.session_state.get('password', '')})
                 response.raise_for_status()
-                st.session_state.token = response.json().get('access_token', '')
+                token = response.json().get('access_token', '')
+                st.write('Token:', token)
                 response.raise_for_status()
             cols[1].success(response.json().get('message'))
             time.sleep(2)

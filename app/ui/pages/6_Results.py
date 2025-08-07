@@ -1,4 +1,5 @@
 """Show Results page for FebriLogic."""
+import time
 from typing import Any
 
 import requests
@@ -6,7 +7,7 @@ from requests.exceptions import HTTPError
 from pandas import DataFrame
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
 
 st.set_page_config(
     page_title='Results',
@@ -14,13 +15,22 @@ st.set_page_config(
     layout='wide',
 )
 
-if not st.session_state.get('token', ''):
-    st.error('Please log in to access results.')
-    st.stop()
+if 'token' not in st.session_state:
+    token: str = controller.get('token')
+    if token:
+        st.session_state['token'] = token
+else:
+    token: str = st.session_state['token']
 
-if not st.session_state.get('patient_ids'):
+if token:
+    controller.set('token', token)
+
+if not st.session_state.get('patient_ids', []):
+    st.session_state.diseases_loaded = False
+    st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
-    st.stop()
+    time.sleep(2)
+    st.switch_page('./pages/2_Patient_Information.py')
 
 if st.session_state.get('patient_id') == 0:
     st.error('Please select a patient to proceed.')
@@ -48,7 +58,7 @@ if submitted:
         with st.spinner('Calculating disease probabilities...'):
             response = requests.get(url=url,
                                     headers={
-                                        'Authorization': f"Bearer {st.session_state.get('token')}"},
+                                        'Authorization': f'Bearer {token}'},
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
         symptom_probabilities = response.json().get('symptom_probabilities', [])
@@ -91,7 +101,7 @@ if submitted:
         'biomarker_probabilities': biomarker_probabilities
     }
     headers: dict[str, str] = {
-        'Authorization': f"Bearer {st.session_state.get('token')}"
+        'Authorization': f'Bearer {token}'
     }
     try:
         with st.spinner('Generating LLM response...'):

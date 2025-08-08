@@ -40,8 +40,9 @@ st.title('🧪 Disease-Specific Tests')
 st.session_state.setdefault('diseases_loaded', False)
 
 st.markdown(
-    '##### Has the selected patient had any disease-specific tests that returned negative results?'
+    '##### Has the patient tested negative using antigen/PCR for any of the following pathogens?'
 )
+st.markdown('##### *Screening tests are not considered.*')
 
 if not st.session_state.get('diseases_loaded', False):
     try:

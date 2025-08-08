@@ -41,12 +41,12 @@ if submitted:
     if not subject.strip():
         missing_fields.append('Subject')
     if missing_fields:
-        st.error(f'Missing fields: {", ".join(missing_fields)}')
+        columns[1].error(f'Missing fields: {", ".join(missing_fields)}')
         st.stop()
 
 if submitted:
     if len(message.strip()) < MINIMUM_MESSAGE_LENGTH:
-        st.error(
+        columns[1].error(
             f'Message must be at least {MINIMUM_MESSAGE_LENGTH} characters long.'
         )
         st.stop()
@@ -76,8 +76,10 @@ if submitted:
         time.sleep(2)
     except HTTPError:
         detail: str = response.json().get('detail', 'Unknown error occurred.')
-        st.error(f'Error sending message: {detail}')
+        columns[1].error(f'Error sending message: {detail}')
         st.stop()
     except requests.exceptions.ConnectionError:
-        st.error('Please check your internet connection or try again later.')
+        columns[1].error(
+            'Please check your internet connection or try again later.'
+        )
         st.stop()

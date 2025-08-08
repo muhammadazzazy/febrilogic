@@ -4,7 +4,7 @@ from config import FEBRILOGIC_LOGO
 
 st.set_page_config(
     page_title='FebriLogic',
-    page_icon='febrilogic.png',
+    page_icon=FEBRILOGIC_LOGO,
     layout='wide',
     initial_sidebar_state='expanded'
 )

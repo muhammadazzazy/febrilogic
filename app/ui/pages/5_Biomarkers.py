@@ -119,7 +119,7 @@ cols[4].button(
 biomarker_reference_ranges: dict[str, str] = {
     biomarker['abbreviation']:
     biomarker['reference_range'] + ' ' +
-    f'({biomarker_std_units[biomarker['abbreviation']]})'
+    f"({biomarker_std_units[biomarker['abbreviation']]})"
     for biomarker in biomarkers
 }
 

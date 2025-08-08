@@ -71,20 +71,20 @@ cols[4].button(
     use_container_width=True
 )
 
-if not st.session_state.get('symptoms_loaded', False):
+@st.cache_data(show_spinner=False, ttl=60 * 60)
+def fetch_symptoms():
     try:
         with st.spinner('Loading symptom metadata...', show_time=True):
             response = requests.get(headers={'Authorization': f'Bearer {token}'},
                                     url=f'{FAST_API_BASE_URL}/api/symptoms/categories-definitions',
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
-        st.session_state.category_symptom_definition = response.json().get(
-            'category_symptom_definition', {})
-        st.session_state.symptoms_loaded = True
         message = st.empty()
         message.success('Symptoms loaded successfully!')
         time.sleep(1.5)
         message.empty()
+        return response.json().get(
+            'category_symptom_definition', {})
     except HTTPError as e:
         error_detail = response.json().get('detail', 'Unknown error')
         st.error(f'Error fetching symptoms: {error_detail}')
@@ -92,6 +92,11 @@ if not st.session_state.get('symptoms_loaded', False):
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()
+
+if not st.session_state.get('symptoms_loaded', False):
+    st.session_state.category_symptom_definition = fetch_symptoms()
+    st.session_state.symptoms_loaded = True
+
 
 category_symptom_definition = st.session_state.get(
     'category_symptom_definition', {}

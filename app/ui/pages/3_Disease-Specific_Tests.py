@@ -44,7 +44,9 @@ st.markdown(
 )
 st.markdown('##### *Screening tests are not considered.*')
 
-if not st.session_state.get('diseases_loaded', False):
+
+@st.cache_data(show_spinner=False, ttl=60 * 60)
+def fetch_diseases():
     try:
         with st.spinner('Loading disease information...'):
             response = requests.get(url=f'{FAST_API_BASE_URL}/api/diseases',
@@ -52,11 +54,14 @@ if not st.session_state.get('diseases_loaded', False):
                                              FAST_API_READ_TIMEOUT),
                                     headers={'Authorization': f'Bearer {token}'})
             response.raise_for_status()
-        st.session_state.diseases = response.json().get('diseases', [])
-        st.session_state.diseases_loaded = True
+        return response.json().get('diseases', [])
     except requests.exceptions.ConnectionError:
         st.error("Failed to connect to the API. Please check your connection.")
         st.stop()
+
+if not st.session_state.get('diseases_loaded', False):
+    st.session_state.diseases = fetch_diseases()
+    st.session_state.diseases_loaded = True
 
 diseases: list[str] = st.session_state.get('diseases', [])
 

@@ -4,7 +4,7 @@ toolbarMode = "auto"
 showSidebarNavigation = true
 
 [server]
-headless = false
+headless = true
 
 [theme]
 base = "dark"

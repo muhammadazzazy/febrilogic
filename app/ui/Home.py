@@ -1,6 +1,6 @@
 """Run the FebriDx multi-page Streamlit application."""
 import streamlit as st
-from config import FEBRILOGIC_LOGO
+from config import FEBRILOGIC_LOGO, UN_SDG_3, UN_SDG_5, UN_SDG_8, UN_SDG_9, UN_SDG_11
 
 st.set_page_config(
     page_title='FebriLogic',
@@ -26,9 +26,10 @@ st.info("""*FebriLogic is funded by a grant from the Bartlett Foundation,
         icon='ℹ️')
 
 
-st.markdown("""### Sustainable Development Goals""")
-st.markdown("""
-            1. Sustainable cities and communities
-            2. Good health and well-being
-            3. Industry, innovation and infrastructure
-            4. Promote health equity""")
+st.markdown('## Sustainable Development Goals')
+cols = st.columns(5, gap='small')
+cols[0].image(UN_SDG_3, width=300)
+cols[1].image(UN_SDG_5, width=300)
+cols[2].image(UN_SDG_8, width=300)
+cols[3].image(UN_SDG_9, width=300)
+cols[4].image(UN_SDG_11, width=300)

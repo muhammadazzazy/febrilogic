@@ -14,6 +14,10 @@ FAST_API_CONNECT_TIMEOUT: Final[int] = st.secrets.get(
 FAST_API_READ_TIMEOUT: Final[int] = st.secrets.get('FAST_API_READ_TIMEOUT', 30)
 
 FEBRILOGIC_LOGO: Final[str] = Path(__file__).parent.parent / 'assets' / 'febrilogic.png'
-print(FEBRILOGIC_LOGO)
+UN_SDG_3: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-3.png'
+UN_SDG_5: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-5.png'
+UN_SDG_8: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-8.png'
+UN_SDG_9: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-9.png'
+UN_SDG_11: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-11.png'
 
 controller = CookieController()

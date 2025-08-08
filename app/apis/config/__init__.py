@@ -29,8 +29,7 @@ SECRET_KEY: Final[str] = os.environ.get('SECRET_KEY')
 ACCESS_TOKEN_EXPIRE_MINUTES: Final[int] = int(
     os.environ.get('ACCESS_TOKEN_EXPIRE_MINUTES', 30))
 
-SQLALCHEMY_DATABASE_URL: Final[str] = 'sqlite:///' + \
-    str(BASE_DIR / os.environ.get('DATABASE_FILE'))
+POSTGRES_DATABASE_URL: Final[str] = os.environ.get('POSTGRES_DATABASE_URL')
 
 RESEND_API_KEY: Final[str] = os.environ.get('RESEND_API_KEY')
 
@@ -53,7 +52,7 @@ GROQ_CONNECT_TIMEOUT: Final[int] = int(
     os.environ.get('GROQ_CONNECT_TIMEOUT', 10))
 
 GROQ_READ_TIMEOUT: Final[int] = int(
-    os.environ.get('GROQ_READ_TIMEOUT', 15))
+    os.environ.get('GROQ_READ_TIMEOUT', 30))
 
 OPENROUTER_API_KEY: Final[str] = os.environ.get(
     'OPENROUTER_API_KEY')
@@ -65,10 +64,10 @@ OPENROUTER_URL: Final[str] = os.environ.get(
     'OPENROUTER_URL')
 
 OPENROUTER_CONNECT_TIMEOUT: Final[int] = int(
-    os.environ.get('OPENROUTER_CONNECT_TIMEOUT', 5))
+    os.environ.get('OPENROUTER_CONNECT_TIMEOUT', 10))
 
 OPENROUTER_READ_TIMEOUT: Final[int] = int(
-    os.environ.get('OPENROUTER_READ_TIMEOUT', 10))
+    os.environ.get('OPENROUTER_READ_TIMEOUT', 30))
 
 PROMPT_TEMPLATE_PATH: Final[Path] = BASE_DIR / \
     Path(os.environ.get('PROMPT_TEMPLATE_PATH'))

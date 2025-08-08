@@ -1,21 +1,14 @@
 """Configuration settings for the Streamlit app."""
-import os
-from pathlib import Path
 from typing import Final
 
-from dotenv import load_dotenv
+import streamlit as st
 from streamlit_cookies_controller import CookieController
 
+FAST_API_BASE_URL: Final[str] = st.secrets.get('FAST_API_BASE_URL')
 
-load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
+FAST_API_CONNECT_TIMEOUT: Final[int] = st.secrets.get(
+    'FAST_API_CONNECT_TIMEOUT', 10)
 
-FAST_API_BASE_URL: Final[str] = os.environ.get(
-    'FAST_API_BASE_URL', 'http://localhost:8000')
-
-FAST_API_CONNECT_TIMEOUT: Final[int] = int(os.environ.get(
-    'FAST_API_CONNECT_TIMEOUT', 5))
-
-FAST_API_READ_TIMEOUT: Final[int] = int(os.environ.get(
-    'FAST_API_READ_TIMEOUT', 10))
+FAST_API_READ_TIMEOUT: Final[int] = st.secrets.get('FAST_API_READ_TIMEOUT', 30)
 
 controller = CookieController()

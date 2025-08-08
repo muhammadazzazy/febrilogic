@@ -1,4 +1,5 @@
 """Configuration settings for the Streamlit app."""
+from pathlib import Path
 from typing import Final
 
 import streamlit as st
@@ -12,6 +13,7 @@ FAST_API_CONNECT_TIMEOUT: Final[int] = st.secrets.get(
 
 FAST_API_READ_TIMEOUT: Final[int] = st.secrets.get('FAST_API_READ_TIMEOUT', 30)
 
-FEBRILOGIC_LOGO: Final[str] = st.secrets.get('FEBRILOGIC_LOGO')
+FEBRILOGIC_LOGO: Final[str] = Path(__file__).parent.parent / 'assets' / 'febrilogic.png'
+print(FEBRILOGIC_LOGO)
 
 controller = CookieController()

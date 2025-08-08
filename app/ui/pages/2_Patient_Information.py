@@ -8,7 +8,7 @@ from requests.exceptions import HTTPError
 
 import streamlit as st
 
-from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT, FEBRILOGIC_LOGO
 
 
 st.set_page_config(
@@ -17,6 +17,8 @@ st.set_page_config(
     layout='wide',
     initial_sidebar_state='expanded'
 )
+
+st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
 if 'token' not in st.session_state:
     token: str = controller.get('token')

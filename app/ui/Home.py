@@ -1,14 +1,17 @@
 """Run the FebriDx multi-page Streamlit application."""
 import streamlit as st
+from config import FEBRILOGIC_LOGO
 
 st.set_page_config(
     page_title='FebriLogic',
-    page_icon=':material/coronavirus:',
+    page_icon='febrilogic.png',
     layout='wide',
     initial_sidebar_state='expanded'
 )
 
-st.title(':material/coronavirus: FebriLogic')
+st.title('FebriLogic')
+
+st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
 st.warning("""**Disclaimer**: This application is for research purposes only
            and should not be used for medical diagnosis or treatment.

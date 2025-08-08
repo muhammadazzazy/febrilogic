@@ -8,9 +8,9 @@ headless = true
 
 [theme]
 base = "dark"
-primaryColor = "#0077B6"
-backgroundColor = "#F8F9FA"
-secondaryBackgroundColor = "#FFFFFF"
+primaryColor = "#03045e"
+backgroundColor = "#e0fbfc"
+secondaryBackgroundColor = "#02c39a"
 textColor = "#212529"
 font = "sans-serif"
 headingFont = "sans-serif"

@@ -6,7 +6,7 @@ import requests
 import streamlit as st
 from requests.exceptions import HTTPError
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT, FEBRILOGIC_LOGO
 
 st.set_page_config(
     page_title='Contact',
@@ -14,6 +14,8 @@ st.set_page_config(
     layout='wide',
     initial_sidebar_state='expanded'
 )
+
+st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
 MINIMUM_MESSAGE_LENGTH: Final[int] = 10
 

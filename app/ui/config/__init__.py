@@ -11,4 +11,6 @@ FAST_API_CONNECT_TIMEOUT: Final[int] = st.secrets.get(
 
 FAST_API_READ_TIMEOUT: Final[int] = st.secrets.get('FAST_API_READ_TIMEOUT', 30)
 
+FEBRILOGIC_LOGO: Final[str] = st.secrets.get('FEBRILOGIC_LOGO')
+
 controller = CookieController()

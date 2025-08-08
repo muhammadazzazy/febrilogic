@@ -2,7 +2,6 @@
 import time
 from typing import Final
 
-
 import requests
 import streamlit as st
 from requests.exceptions import HTTPError
@@ -22,6 +21,7 @@ st.header('📧 Contact Us')
 
 columns = st.columns(3, gap='small', border=False)
 with columns[1].form('contact_form'):
+    email = st.text_input('Email', placeholder='Enter your email')
     name = st.text_input('Name', placeholder='Enter your name')
     subject = st.text_input(
         'Subject', placeholder='Enter the subject')
@@ -32,6 +32,8 @@ with columns[1].form('contact_form'):
 
 if submitted:
     missing_fields: list[str] = []
+    if not email.strip():
+        missing_fields.append('Email')
     if not name.strip():
         missing_fields.append('Name')
     if not message.strip():
@@ -51,8 +53,10 @@ if submitted:
 
 if submitted:
     payload: dict[str, str] = {
+        'email': email.strip(),
+        'message': message.strip(),
+        'name': name.strip(),
         'subject': subject.strip(),
-        'message': message.strip()
     }
     try:
         with columns[1]:

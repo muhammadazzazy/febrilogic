@@ -2,5 +2,7 @@ from pydantic import BaseModel
 
 
 class ContactRequest(BaseModel):
-    subject: str
+    email: str
     message: str
+    name: str
+    subject: str

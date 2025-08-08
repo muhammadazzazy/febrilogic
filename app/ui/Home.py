@@ -21,3 +21,11 @@ st.info("""*FebriLogic is funded by a grant from the Bartlett Foundation,
         and aims to provide a comprehensive tool
         for differential diagnosis of acute febrile illnesses.*""",
         icon='ℹ️')
+
+
+st.markdown("""### Sustainable Development Goals""")
+st.markdown("""
+            1. Sustainable cities and communities
+            2. Good health and well-being
+            3. Industry, innovation and infrastructure
+            4. Promote health equity""")

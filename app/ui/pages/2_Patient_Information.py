@@ -213,6 +213,7 @@ for country in countries:
         country_id = country['id']
         break
 
+
 def submit_patient_info(url: str, payload: dict[str, Any]) -> None:
     """Submit patient information to the FastAPI server."""
     try:

@@ -21,6 +21,7 @@ st.session_state.setdefault('login', False)
 st.session_state.setdefault('register', False)
 
 if st.session_state.get('token', ''):
+    st.session_state.token = ''
     st.session_state.patients_loaded = False
     st.session_state.patients = []
     st.session_state.patient_ids = []
@@ -68,7 +69,6 @@ if st.session_state.get('login', False) or st.session_state.get('register', Fals
 
 
 if st.session_state.get('login', False):
-    st.session_state.token = ''
     controller.set('token', '')
     st.session_state.login = False
     try:

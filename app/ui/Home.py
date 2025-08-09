@@ -26,10 +26,12 @@ st.info("""*FebriLogic is funded by a grant from the Bartlett Foundation,
         icon='ℹ️')
 
 
-st.markdown('## Sustainable Development Goals')
+st.markdown(
+    '#### FebriLogic supports the following sustainable development goals of the United Nations:'
+)
 cols = st.columns(5, gap='small')
-cols[0].image(UN_SDG_3, width=300)
-cols[1].image(UN_SDG_5, width=300)
-cols[2].image(UN_SDG_8, width=300)
-cols[3].image(UN_SDG_9, width=300)
-cols[4].image(UN_SDG_11, width=300)
+cols[0].image(UN_SDG_3, width=225)
+cols[1].image(UN_SDG_5, width=225)
+cols[2].image(UN_SDG_8, width=225)
+cols[3].image(UN_SDG_9, width=225)
+cols[4].image(UN_SDG_11, width=225)

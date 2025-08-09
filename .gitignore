@@ -210,3 +210,4 @@ data/
 assets/private
 assets/public
 scripts/
+.env.local

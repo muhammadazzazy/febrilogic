@@ -8,15 +8,17 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
-BASE_DIR = Path(__file__).resolve().parents[3]
+BASE_DIR: Final[Path] = Path(__file__).resolve().parents[3]
 APIS_DIR: Final[Path] = BASE_DIR / 'app' / 'apis'
 
 
-SYMPTOM_WEIGHTS_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('SYMPTOM_WEIGHTS_FILE'))
+SYMPTOM_WEIGHTS_FILE: Final[Path] = Path(
+    os.environ.get('SYMPTOM_WEIGHTS_FILE')
+)
 
-BIOMARKER_STATS_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('BIOMARKER_STATS_FILE'))
+BIOMARKER_STATS_FILE: Final[Path] = Path(
+    os.environ.get('BIOMARKER_STATS_FILE')
+)
 
 FAST_API_HOST: Final[str] = os.environ.get('FAST_API_HOST', '0.0.0.0')
 

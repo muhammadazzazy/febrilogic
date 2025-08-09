@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from apis.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
+    RENDER_EXTERNAL_HOST,
     RESEND_API_KEY,
     RESEND_MAX_RETRIES,
     SECRET_KEY,
@@ -153,7 +154,8 @@ def send_verification_email(to_email: str, verification_code: str) -> None:
     """Send a verification email to the user."""
     with open(VERIFICATION_EMAIL_TEMPLATE, encoding='utf-8') as file:
         template = Template(file.read())
-    html = template.render(verification_code=verification_code)
+    html = template.render(
+        verification_url=f'{RENDER_EXTERNAL_HOST}/auth/verify/{verification_code}')
     params: resend.Emails.SendParams = {
         "from": "FebriLogic <noreply@febrilogic.com>",
         "to": [to_email],

@@ -7,7 +7,7 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException
 from jinja2 import Template
 from pandas import DataFrame
-from sqlalchemy import select, func
+from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.orm import Session
 
 from apis.config import (
@@ -279,7 +279,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
         row.name for row in db.query(Disease.name)
         .join(patient_negative_diseases)
         .filter(patient_negative_diseases.c.patient_id == patient_id,
-                func.strftime('%Y-%m-%d %H:%M:%S', patient_negative_diseases.c.created_at) == func.strftime('%Y-%m-%d %H:%M:%S', latest_datetime)).all()
+                patient_negative_diseases.c.created_at == latest_datetime).all()
     ]
     print(f'Latest negative diseases: {negative_diseases}')
 
@@ -300,7 +300,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
         row.name for row in db.query(Symptom.name)
         .join(patient_symptoms)
         .filter(patient_symptoms.c.patient_id == patient_id,
-                func.strftime('%Y-%m-%d %H:%M:%S', patient_symptoms.c.created_at) == func.strftime('%Y-%m-%d %H:%M:%S', latest_datetime)).all()
+                patient_symptoms.c.created_at == latest_datetime).all()
     ]
     print(f'Latest positive symptoms: {positive_symptoms}')
     disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
@@ -327,7 +327,7 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     ).join(
         Biomarker, patient_biomarkers.c.biomarker_id == Biomarker.id).filter(
         patient_biomarkers.c.patient_id == patient_id,
-        func.strftime('%Y-%m-%d %H:%M:%S', patient_biomarkers.c.created_at) == func.strftime('%Y-%m-%d %H:%M:%S', latest_datetime)).all()
+        patient_biomarkers.c.created_at == latest_datetime).all()
     print(f'Latest biomarkers: {biomarker_result}')
     biomarker_row: dict[str, float] = {
         row.abbreviation: row.value for row in biomarker_result}
@@ -362,12 +362,8 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
     negative_diseases: list[str] = db.query(Disease.name).join(
         patient_negative_diseases).filter(
         patient_negative_diseases.c.patient_id == patient_id,
-        func.strftime(
-            '%Y-%m-%d %H:%M:%S',
-            patient_negative_diseases.c.created_at
-        ) == func.strftime(
-            '%Y-%m-%d %H:%M:%S', latest_datetime
-        )).all()
+        patient_negative_diseases.c.created_at == latest_datetime
+    ).all()
 
     latest_datetime = db.execute(
         select(patient_symptoms.c.created_at)
@@ -378,11 +374,7 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
 
     symptoms: list[str] = db.query(Symptom.name).join(patient_symptoms).filter(
         patient_symptoms.c.patient_id == patient_id,
-        func.strftime(
-            '%%Y-%m-%d %H:%M:%S', patient_symptoms.c.created_at
-        ) == func.strftime(
-            '%%Y-%m-%d %H:%M:%S', latest_datetime
-        )
+        patient_symptoms.c.created_at == latest_datetime
     ).all()
 
     latest_datetime = db.execute(
@@ -391,13 +383,12 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
         .order_by(patient_biomarkers.c.created_at.desc())
         .limit(1)
     ).scalar_one_or_none()
-    biomarkers: list[tuple[str, float]] = db.query(Biomarker.abbreviation, func.round(
-        patient_biomarkers.c.value, 2)).join(
+    biomarkers: list[tuple[str, float]] = db.query(Biomarker.abbreviation, func.round(cast(
+        patient_biomarkers.c.value, Numeric), 2)).join(
         patient_biomarkers).filter(
         patient_biomarkers.c.patient_id == patient_id,
-        func.strftime('%Y-%m-%d %H:%M:%S', patient_biomarkers.c.created_at) == func.strftime(
-            '%Y-%m-%d %H:%M:%S', latest_datetime
-        )).all()
+        patient_biomarkers.c.created_at == latest_datetime
+    ).all()
     return {
         'negative_diseases': [d[0] for d in negative_diseases],
         'symptoms': [s[0] for s in symptoms],

@@ -4,9 +4,8 @@ from datetime import datetime
 from typing import Any, Final
 
 import requests
-from requests.exceptions import HTTPError
-
 import streamlit as st
+from requests.exceptions import HTTPError
 
 from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT, FEBRILOGIC_LOGO
 
@@ -59,7 +58,7 @@ def get_patient_info() -> list[dict[str, Any]]:
         return response.json().get('patients', [])
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
-        st.error(f'Error loading patient information: {error_detail}')
+        st.error(f'Error fetching patient information: {error_detail}')
         st.stop()
     except requests.exceptions.ConnectionError:
         st.error('Connection error. Please check your FastAPI server.')

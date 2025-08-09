@@ -2,9 +2,8 @@
 import time
 
 import requests
-from requests.exceptions import HTTPError
-
 import streamlit as st
+from requests.exceptions import HTTPError
 
 from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT, FEBRILOGIC_LOGO
 
@@ -73,6 +72,7 @@ cols[4].button(
     use_container_width=True
 )
 
+
 @st.cache_data(show_spinner=False, ttl=60 * 60)
 def fetch_symptoms():
     try:
@@ -94,6 +94,7 @@ def fetch_symptoms():
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()
+
 
 if not st.session_state.get('symptoms_loaded', False):
     st.session_state.category_symptom_definition = fetch_symptoms()

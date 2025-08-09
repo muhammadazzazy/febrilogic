@@ -1,8 +1,8 @@
 """Show the Login page for FebriLogic."""
 import re
+
 import requests
 from requests.exceptions import HTTPError
-
 import streamlit as st
 
 from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT, FEBRILOGIC_LOGO
@@ -20,11 +20,8 @@ st.title('🔑 Login')
 st.session_state.setdefault('login', False)
 st.session_state.setdefault('register', False)
 
-if st.session_state.get('token', ''):
-    st.session_state.token = ''
-    st.session_state.patients_loaded = False
-    st.session_state.patients = []
-    st.session_state.patient_ids = []
+st.session_state.token = ''
+controller.set('token', st.session_state.token)
 
 cols = st.columns(3, gap='large', border=False)
 center_col = cols[1]

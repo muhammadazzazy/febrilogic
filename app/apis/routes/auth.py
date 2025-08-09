@@ -20,6 +20,7 @@ from apis.config import (
     RESEND_API_KEY,
     RESEND_MAX_RETRIES,
     SECRET_KEY,
+    STREAMLIT_BASE_URL,
     VERIFICATION_EMAIL_TEMPLATE
 )
 
@@ -145,7 +146,7 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     user.is_verified = True
     user.verification_code = None
     db.commit()
-    return RedirectResponse(url='http://localhost:8501/Login')
+    return RedirectResponse(url=STREAMLIT_BASE_URL + '/Login',)
 
 
 def send_verification_email(to_email: str, verification_code: str) -> None:
@@ -162,7 +163,6 @@ def send_verification_email(to_email: str, verification_code: str) -> None:
     for _i in range(RESEND_MAX_RETRIES):
         email: resend.Email = resend.Emails.send(params)
         if email and 'id' in email:
-            print(f"Verification email ID: {email['id']}")
             return {
                 'message': f"Verification email {email['id']} sent to {to_email}"
             }

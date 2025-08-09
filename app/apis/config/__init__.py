@@ -22,6 +22,9 @@ FAST_API_HOST: Final[str] = os.environ.get('FAST_API_HOST', '0.0.0.0')
 
 FAST_API_PORT: Final[int] = int(os.environ.get('FAST_API_PORT', 8000))
 
+STREAMLIT_BASE_URL: Final[str] = os.environ.get(
+    'STREAMLIT_BASE_URL', 'http://localhost:8501')
+
 ALGORITHM: Final[str] = os.environ.get('ALGORITHM', 'HS256')
 
 SECRET_KEY: Final[str] = os.environ.get('SECRET_KEY')

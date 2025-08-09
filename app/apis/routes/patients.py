@@ -49,8 +49,12 @@ def upload_patient_data(patient_request: PatientRequest,
     patient_ids.append(
         db.query(Patient.id).order_by(Patient.id.desc()).limit(1).scalar()
     )
-    patient_ids.append(db.query(patient_symptoms.c.patient_id).order_by(
-        db.query(patient_symptoms.c.patient_id.desc())).limit(1).scalar())
+    patient_ids.append(
+        db.query(patient_symptoms.c.patient_id).order_by(
+            patient_symptoms.c.patient_id.desc()
+        ).limit(1).scalar()
+    )
+
     patient = Patient(
         age=patient_request.age,
         city=patient_request.city,

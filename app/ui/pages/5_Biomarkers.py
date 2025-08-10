@@ -134,7 +134,7 @@ biomarker_names: dict[str, str] = {
 biomarker_units: dict[str, list[str]] = st.session_state.get(
     'biomarker_units', {})
 for biomarker, unit in biomarker_std_units.items():
-    with st.form('biomarkers_form'):
+    with st.container():
         row = st.columns([2, 3, 4], gap='medium', border=False)
         if biomarker_names[biomarker]:
             checkboxes[f'{biomarker}'] = row[0].checkbox(

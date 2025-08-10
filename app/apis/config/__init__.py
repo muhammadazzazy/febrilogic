@@ -6,17 +6,20 @@ from typing import Final
 
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
+if os.path.exists(Path(__file__).parent.parent / '.env.local'):
+    load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env.local')
+else:
+    load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
 
 BASE_DIR: Final[Path] = Path(__file__).resolve().parents[3]
 APIS_DIR: Final[Path] = BASE_DIR / 'app' / 'apis'
 
 
-SYMPTOM_WEIGHTS_FILE: Final[Path] = Path(
+SYMPTOM_WEIGHTS_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('SYMPTOM_WEIGHTS_FILE')
 )
 
-BIOMARKER_STATS_FILE: Final[Path] = Path(
+BIOMARKER_STATS_FILE: Final[Path] = BASE_DIR / Path(
     os.environ.get('BIOMARKER_STATS_FILE')
 )
 
@@ -25,10 +28,10 @@ FAST_API_HOST: Final[str] = os.environ.get('FAST_API_HOST', '0.0.0.0')
 FAST_API_PORT: Final[int] = int(os.environ.get('FAST_API_PORT', 8000))
 
 RENDER_EXTERNAL_HOST: Final[str] = os.environ.get(
-    'RENDER_EXTERNAL_HOST', 'https://febrilogic.onrender.com')
+    'RENDER_EXTERNAL_HOST', 'https://api.febrilogic.com')
 
 STREAMLIT_BASE_URL: Final[str] = os.environ.get(
-    'STREAMLIT_BASE_URL', 'http://localhost:8501')
+    'STREAMLIT_BASE_URL', 'https://www.febrilogic.com')
 
 ALGORITHM: Final[str] = os.environ.get('ALGORITHM', 'HS256')
 
@@ -77,5 +80,5 @@ OPENROUTER_CONNECT_TIMEOUT: Final[int] = int(
 OPENROUTER_READ_TIMEOUT: Final[int] = int(
     os.environ.get('OPENROUTER_READ_TIMEOUT', 30))
 
-PROMPT_TEMPLATE_PATH: Final[Path] = BASE_DIR / \
-    Path(os.environ.get('PROMPT_TEMPLATE_PATH'))
+PROMPT_TEMPLATE: Final[Path] = BASE_DIR / \
+    Path(os.environ.get('PROMPT_TEMPLATE'))

@@ -14,7 +14,7 @@ from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
     GROQ_API_KEY, GROQ_MODEL, GROQ_URL, GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT,
     OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
-    PROMPT_TEMPLATE_PATH
+    PROMPT_TEMPLATE
 )
 from apis.db.database import get_db
 from apis.models.model import (
@@ -421,7 +421,7 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
     negative_diseases: list[str] = lab_results.get('negative_diseases', [])
     symptoms: list[str] = lab_results.get('symptoms', [])
     biomarkers: dict[str, float] = lab_results.get('biomarker_values', {})
-    template: Template = Template(PROMPT_TEMPLATE_PATH.read_text())
+    template: Template = Template(PROMPT_TEMPLATE.read_text())
     dynamic_data: dict[str, Any] = {
         'patient_id': patient_id,
         'negative_diseases': negative_diseases,
@@ -475,7 +475,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     biomarkers = lab_results.get('biomarkers', {})
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
-    template: Template = Template(PROMPT_TEMPLATE_PATH.read_text())
+    template: Template = Template(PROMPT_TEMPLATE.read_text())
     dynamic_data: dict[str, Any] = {
         'patient_id': patient_id,
         'negative_diseases': negative_diseases,

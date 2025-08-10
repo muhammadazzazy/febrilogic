@@ -13,10 +13,10 @@ st.title('FebriLogic')
 
 st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
-st.warning("""**Disclaimer**: This application is for research purposes only
-           and should not be used for medical diagnosis or treatment.
-           Always consult a healthcare professional for medical advice.""",
-           icon='⚠️')
+st.markdown("""FebriLogic is a tool that employs a novel algorithm to aid health care workers in the differential diagnosis of acute febrile illnesses
+            and provide evidence-based recommendations for timely diagnosis and treatment.
+            By explaining its algorithmic findings, it enhances physicians' understanding
+            and bridges the gap between clinical decision-making and black box models.""")
 
 st.info("""*FebriLogic is funded by a grant from the Bartlett Foundation,
         [The American University in Cairo](https://www.aucegypt.edu/)
@@ -35,3 +35,9 @@ cols[1].image(UN_SDG_5, width=225)
 cols[2].image(UN_SDG_8, width=225)
 cols[3].image(UN_SDG_9, width=225)
 cols[4].image(UN_SDG_11, width=225)
+
+
+st.warning("""**Disclaimer**: This application is for research purposes only
+           and should not be used for medical diagnosis or treatment.
+           Always consult a healthcare professional for medical advice.""",
+           icon='⚠️')

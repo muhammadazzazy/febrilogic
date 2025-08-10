@@ -396,7 +396,7 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
     return {
         'negative_diseases': [d[0] for d in negative_diseases],
         'symptoms': [s[0] for s in symptoms],
-        'biomarker_values': {b[0]: b[1] for b in biomarkers}
+        'biomarkers': {b[0]: b[1] for b in biomarkers}
     }
 
 
@@ -426,7 +426,7 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
         'patient_id': patient_id,
         'negative_diseases': negative_diseases,
         'symptoms': symptoms,
-        'biomarker_values': biomarkers,
+        'biomarkers': biomarkers,
         'biomarker_probabilities': biomarker_probabilities[:3]
     }
     rendered_prompt: str = template.render(**dynamic_data)
@@ -472,7 +472,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     lab_results = get_latest_lab_results(patient_id, db)
     negative_diseases = lab_results.get('negative_diseases', [])
     symptoms = lab_results.get('symptoms', [])
-    biomarkers = lab_results.get('biomarker_values', {})
+    biomarkers = lab_results.get('biomarkers', {})
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
     template: Template = Template(PROMPT_TEMPLATE_PATH.read_text())
@@ -480,7 +480,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
         'patient_id': patient_id,
         'negative_diseases': negative_diseases,
         'symptoms': symptoms,
-        'biomarker_values': biomarkers,
+        'biomarkers': biomarkers,
         'biomarker_probabilities': biomarker_probabilities[:3]
     }
     rendered_prompt: str = template.render(**dynamic_data)

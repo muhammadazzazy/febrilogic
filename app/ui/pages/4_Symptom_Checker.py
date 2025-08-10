@@ -105,7 +105,7 @@ category_symptom_definition = st.session_state.get(
     'category_symptom_definition', {}
 )
 
-with st.container(key='symptom_checker_container', border=True):
+with st.form('symptom_checker_form'):
     total_cols = st.columns(3, gap='medium', border=False)
     i: int = 0
     for category, symptoms in category_symptom_definition.items():
@@ -122,7 +122,7 @@ with st.container(key='symptom_checker_container', border=True):
         i += 1
 
     btn_cols = st.columns(5, gap='medium')
-    submitted = btn_cols[-1].button(
+    submitted = btn_cols[-1].form_submit_button(
         'Next',
         use_container_width=True,
         icon='➡️'

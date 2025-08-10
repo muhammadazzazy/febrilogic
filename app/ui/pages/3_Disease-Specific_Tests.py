@@ -61,6 +61,7 @@ def fetch_diseases():
         st.error("Failed to connect to the API. Please check your connection.")
         st.stop()
 
+
 if not st.session_state.get('diseases_loaded', False):
     st.session_state.diseases = fetch_diseases()
     st.session_state.diseases_loaded = True
@@ -94,16 +95,16 @@ with st.container(border=False):
         on_click=reset_button
     )
 
-with st.container(border=True):
+with st.form('disease_specific_tests_form'):
     cols = st.columns(2, border=False, gap='small')
     for i, disease in enumerate(diseases):
         cols[i % 2].checkbox(
             label=disease, key=f'{disease}_checkbox')
 
     cols = st.columns(5)
-    submitted = cols[4].button(label='Next',
-                               icon='➡️',
-                               use_container_width=True)
+    submitted = cols[4].form_submit_button(label='Next',
+                                           icon='➡️',
+                                           use_container_width=True)
 
 checkboxes: dict[str, bool] = {
     disease: st.session_state.get(f'{disease}_checkbox', False)

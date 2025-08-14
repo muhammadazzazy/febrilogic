@@ -7,7 +7,7 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException
 from jinja2 import Template
 from pandas import DataFrame
-from sqlalchemy import Numeric, cast, func, select
+from sqlalchemy import Numeric, cast, func, select, tuple_
 from sqlalchemy.orm import Session
 
 from apis.config import (
@@ -188,15 +188,24 @@ def upload_patient_biomarkers(
     unit_ids: dict[str, int] = {unit: id for id, unit in db.query(Unit.id, Unit.symbol).filter(
         Unit.symbol.in_(unit_symbols)
     ).all()}
+    print(f'{unit_ids=}')
     biomarkers: list[str] = biomarker_value_unit.keys()
     biomarker_ids: dict[str, int] = {abbreviation: id for abbreviation, id in db.query(
         Biomarker.abbreviation, Biomarker.id).filter(Biomarker.abbreviation.in_(biomarkers)).all()}
+    pairs: tuple[int, int] = [
+        (biomarker_ids[abbreviation], unit_ids[unit])
+        for abbreviation, (_, unit)
+        in request.biomarker_value_unit.items()
+    ]
 
-    biomarker_factors: dict[str, float] = dict(db.query(Biomarker.abbreviation, biomarker_units.c.factor).join(
-        Biomarker, biomarker_units.c.biomarker_id == Biomarker.id).filter(
-            biomarker_units.c.unit_id.in_(unit_ids.values()),
-            biomarker_units.c.biomarker_id.in_(biomarker_ids.values())
-    ).all())
+    biomarker_factors = dict(
+        db.query(Biomarker.abbreviation, biomarker_units.c.factor)
+        .join(Biomarker, biomarker_units.c.biomarker_id == Biomarker.id)
+        .join(Unit, biomarker_units.c.unit_id == Unit.id)
+        .filter(tuple_(biomarker_units.c.biomarker_id, biomarker_units.c.unit_id).in_(pairs))
+        .all()
+    )
+    print(f'{biomarker_factors=}')
     data: list[dict[str, Any]] = []
     print(f'Biomarker factors: {biomarker_factors}')
     for biomarker, (value, _) in biomarker_value_unit.items():

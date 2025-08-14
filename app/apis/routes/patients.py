@@ -183,31 +183,20 @@ def upload_patient_biomarkers(
 
     biomarker_value_unit: dict[str, tuple[float, str]
                                ] = request.biomarker_value_unit
-    unit_symbols: list[str] = [unit for _,
-                               unit in biomarker_value_unit.values()]
-    unit_ids: dict[str, int] = {unit: id for id, unit in db.query(Unit.id, Unit.symbol).filter(
-        Unit.symbol.in_(unit_symbols)
-    ).all()}
-    print(f'{unit_ids=}')
-    biomarkers: list[str] = biomarker_value_unit.keys()
-    biomarker_ids: dict[str, int] = {abbreviation: id for abbreviation, id in db.query(
-        Biomarker.abbreviation, Biomarker.id).filter(Biomarker.abbreviation.in_(biomarkers)).all()}
-    pairs: tuple[int, int] = [
-        (biomarker_ids[abbreviation], unit_ids[unit])
-        for abbreviation, (_, unit)
-        in request.biomarker_value_unit.items()
+    pairs: list[tuple[str, str]] = [
+        (abbrev, unit) for abbrev, (_, unit) in request.biomarker_value_unit.items()
     ]
-
-    biomarker_factors = dict(
-        db.query(Biomarker.abbreviation, biomarker_units.c.factor)
-        .join(Biomarker, biomarker_units.c.biomarker_id == Biomarker.id)
-        .join(Unit, biomarker_units.c.unit_id == Unit.id)
-        .filter(tuple_(biomarker_units.c.biomarker_id, biomarker_units.c.unit_id).in_(pairs))
-        .all()
-    )
-    print(f'{biomarker_factors=}')
+    results = db.query(
+        Biomarker.abbreviation,
+        Biomarker.id,
+        biomarker_units.c.factor
+    ).join(biomarker_units, biomarker_units.c.biomarker_id == Biomarker.id).join(Unit, biomarker_units.c.unit_id == Unit.id).filter(tuple_(Biomarker.abbreviation, Unit.symbol).in_(pairs)).all()
+    biomarker_factors: dict[str, float] = {}
+    biomarker_ids: dict[str, int] = {}
+    for abbreviation, biomarker_id, factor in results:
+        biomarker_factors[abbreviation] = factor
+        biomarker_ids[abbreviation] = biomarker_id
     data: list[dict[str, Any]] = []
-    print(f'Biomarker factors: {biomarker_factors}')
     for biomarker, (value, _) in biomarker_value_unit.items():
         data.append(
             {

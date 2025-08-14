@@ -18,7 +18,7 @@ from apis.config import (
 )
 from apis.db.database import get_db
 from apis.models.model import (
-    Biomarker, Disease, Patient, Symptom, Unit,
+    Biomarker, Country, Disease, Patient, Symptom, Unit,
     biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
 from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
@@ -417,6 +417,30 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
 
+    patient_result = (
+        db.query(Patient.age, Patient.country_id, Patient.sex, Patient.race)
+        .filter(Patient.id == patient_id)
+        .first()
+    )
+
+    country = (
+        db.query(Country.common_name)
+        .filter(Country.id == patient_result.country_id)
+        .first()
+    )
+    if patient_result.race:
+        patient: dict[str, int | str] = {
+            'age': patient_result.age,
+            'country': country[0],
+            'sex': patient_result.sex,
+            'race': patient_result.race
+        }
+    else:
+        patient: dict[str, int | str] = {
+            'age': patient_result.age,
+            'country': country[0],
+            'sex': patient_result.sex
+        }
     lab_results = get_latest_lab_results(patient_id, db)
     negative_diseases: list[str] = lab_results.get('negative_diseases', [])
     symptoms: list[str] = lab_results.get('symptoms', [])
@@ -424,6 +448,7 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
     template: Template = Template(PROMPT_TEMPLATE.read_text())
     dynamic_data: dict[str, Any] = {
         'patient_id': patient_id,
+        'patient_info': patient,
         'negative_diseases': negative_diseases,
         'symptoms': symptoms,
         'biomarkers': biomarkers,
@@ -469,6 +494,30 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     headers: dict[str, str] = {'Authorization': f'Bearer {GROQ_API_KEY}',
                                'Content-Type': 'application/json'}
 
+    patient_result = (
+        db.query(Patient.age, Patient.country_id, Patient.sex, Patient.race)
+        .filter(Patient.id == patient_id)
+        .first()
+    )
+
+    country = (
+        db.query(Country.common_name)
+        .filter(Country.id == patient_result.country_id)
+        .first()
+    )
+    if patient_result.race:
+        patient: dict[str, int | str] = {
+            'age': patient_result.age,
+            'country': country[0],
+            'sex': patient_result.sex,
+            'race': patient_result.race
+        }
+    else:
+        patient: dict[str, int | str] = {
+            'age': patient_result.age,
+            'country': country[0],
+            'sex': patient_result.sex
+        }
     lab_results = get_latest_lab_results(patient_id, db)
     negative_diseases = lab_results.get('negative_diseases', [])
     symptoms = lab_results.get('symptoms', [])
@@ -478,6 +527,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     template: Template = Template(PROMPT_TEMPLATE.read_text())
     dynamic_data: dict[str, Any] = {
         'patient_id': patient_id,
+        'patient_info': patient,
         'negative_diseases': negative_diseases,
         'symptoms': symptoms,
         'biomarkers': biomarkers,

@@ -82,3 +82,6 @@ OPENROUTER_READ_TIMEOUT: Final[int] = int(
 
 PROMPT_TEMPLATE: Final[Path] = BASE_DIR / \
     Path(os.environ.get('PROMPT_TEMPLATE'))
+
+SUPPORT_REQUEST_TEMPLATE: Final[Path] = APIS_DIR / Path(
+    os.environ.get('SUPPORT_REQUEST_TEMPLATE'))

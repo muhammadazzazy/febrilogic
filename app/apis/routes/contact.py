@@ -1,10 +1,12 @@
 """Send emails to the support team."""
 import resend
+from datetime import datetime
 from fastapi import APIRouter, HTTPException
+from jinja2 import Template
 from starlette import status
 
 from apis.models.contact_request import ContactRequest
-from apis.config import RESEND_API_KEY, RESEND_MAX_RETRIES
+from apis.config import RESEND_API_KEY, RESEND_MAX_RETRIES, SUPPORT_REQUEST_TEMPLATE
 
 
 api_router: APIRouter = APIRouter(
@@ -17,12 +19,18 @@ resend.api_key = RESEND_API_KEY
 
 @api_router.post('')
 def contact(contact_request: ContactRequest) -> dict[str, str]:
-    """Send a contact request email"""
+    """Send a contact request email."""
+    with open(SUPPORT_REQUEST_TEMPLATE, encoding='utf-8') as file:
+        template = Template(file.read())
+    html = template.render(name=contact_request.name,
+                           email=contact_request.email,
+                           message=contact_request.message,
+                           current_year=datetime.now().year)
     params: resend.Emails.SendParams = {
         "from": "FebriLogic <noreply@febrilogic.com>",
         "to": "FebriLogic Support <support@febrilogic.com>",
         "subject": contact_request.subject,
-        "html": contact_request.message + f'<br>Sent by {contact_request.name} ({contact_request.email})'
+        "html": html
     }
     for _i in range(RESEND_MAX_RETRIES):
         email: resend.Email = resend.Emails.send(params)

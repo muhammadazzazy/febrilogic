@@ -13,7 +13,7 @@ st.title(':blue[FebriLogic]')
 
 st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
-st.markdown("""#### FebriLogic is a tool that employs a novel algorithm to aid health care workers in the differential diagnosis of acute febrile illnesses and provide evidence-based recommendations for timely diagnosis and treatment.""", )
+st.markdown("""#### FebriLogic is an automated tool based on a novel algorithm that leverages real-world data to assist healthcare professionals in the differential diagnosis of AFIs.""", )
 
 st.info("""*FebriLogic is funded by a grant from the Bartlett Foundation,
         [The American University in Cairo](https://www.aucegypt.edu/)

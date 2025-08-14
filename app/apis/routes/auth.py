@@ -124,10 +124,13 @@ async def create_user(user_request: UserRequest,
         )
         db.add(user_model)
         db.commit()
+        send_verification_email(to_email=user_request.email,
+                                verification_code=verification_code)
+
     if existing_user and not existing_user.is_verified:
         verification_code: str = existing_user.verification_code
         send_verification_email(
-            user_request.email, verification_code
+            to_email=user_request.email, verification_code=verification_code
         )
     return {
         'message': f'Verification link sent to your email: {user_request.email}'
@@ -150,7 +153,7 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     return RedirectResponse(url=STREAMLIT_BASE_URL + '/Login',)
 
 
-def send_verification_email(to_email: str, verification_code: str) -> None:
+def send_verification_email(*, to_email: str, verification_code: str) -> None:
     """Send a verification email to the user."""
     with open(VERIFICATION_EMAIL_TEMPLATE, encoding='utf-8') as file:
         template = Template(file.read())

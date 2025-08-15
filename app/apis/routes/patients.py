@@ -374,7 +374,7 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
         .limit(1)
     ).scalar_one_or_none()
 
-    symptoms: list[str] = db.query(Symptom.name).join(patient_symptoms).filter(
+    symptoms: list[tuple[str]] = db.query(Symptom.name).join(patient_symptoms).filter(
         patient_symptoms.c.patient_id == patient_id,
         patient_symptoms.c.created_at == latest_datetime
     ).all()
@@ -393,7 +393,7 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
     ).all()
     return {
         'negative_diseases': [d[0] for d in negative_diseases],
-        'symptoms': [s[0] for s in symptoms],
+        'symptoms': [s[0].replace('_', ' ').title() for s in symptoms],
         'biomarkers': {b[0]: b[1] for b in biomarkers}
     }
 
@@ -433,9 +433,9 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
     template: Template = Template(PROMPT_TEMPLATE.read_text())
     dynamic_data: dict[str, Any] = {
         'patient_id': patient_id,
-        'patient_info': patient,
-        'negative_diseases': negative_diseases,
-        'symptoms': symptoms,
+        'patient_info': f"Age {patient['age']}, {patient['country']}, {patient['sex']}, {patient['race']}",
+        'negative_diseases': ', '.join(negative_diseases),
+        'symptoms': ', '.join(symptoms),
         'biomarkers': biomarkers,
         'biomarker_probabilities': biomarker_probabilities[:3]
     }

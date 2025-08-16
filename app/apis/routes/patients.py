@@ -430,6 +430,9 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
     biomarkers = lab_results.get('biomarkers', {})
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
+    top_3_diagnoses: list[tuple[str, float]] = [
+        (d[0], d[1]) for d in biomarker_probabilities[:3]
+    ]
     template: Template = Template(PROMPT_TEMPLATE.read_text())
     dynamic_data: dict[str, Any] = {
         'patient_id': patient_id,
@@ -437,7 +440,7 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
         'negative_diseases': ', '.join(negative_diseases),
         'symptoms': ', '.join(symptoms),
         'biomarkers': biomarkers,
-        'biomarker_probabilities': biomarker_probabilities[:3]
+        'top_3_diagnoses': top_3_diagnoses
     }
     rendered_prompt: str = template.render(**dynamic_data)
     print(f'Rendered prompt: {rendered_prompt}')

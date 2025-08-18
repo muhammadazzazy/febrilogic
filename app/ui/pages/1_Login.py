@@ -46,7 +46,15 @@ with center_col.form('login_form', border=True):
         icon='📝'
     )
 
-if st.session_state.get('login', False):
+
+st.session_state.reset_password = center_col.button(
+    label='Reset password',
+    use_container_width=True,
+    icon='🔄'
+)
+
+
+if st.session_state.get('login', False) or st.session_state.get('register', False):
     st.session_state.login = True
     missing_fields: list[str] = []
     if not st.session_state.get('email', '').strip():
@@ -59,7 +67,8 @@ if st.session_state.get('login', False):
         )
         st.stop()
 
-if st.session_state.get('login', False) or st.session_state.get('register', False):
+if st.session_state.get('login', False) or st.session_state.get('register', False) \
+        or st.session_state.get('reset', False):
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', st.session_state.get('email', '')):
         center_col.error('Please enter a valid email address.')
         st.stop()
@@ -90,19 +99,6 @@ if st.session_state.get('login', False):
         st.stop()
 
 if st.session_state.get('register', False):
-    st.session_state.login = True
-    missing_fields: list[str] = []
-    if not st.session_state.get('email', '').strip():
-        missing_fields.append('Email')
-    if not st.session_state.get('password', '').strip():
-        missing_fields.append('Password')
-    if missing_fields:
-        center_col.error(
-            f'Please fill in the following fields: {", ".join(missing_fields)}'
-        )
-        st.stop()
-
-if st.session_state.get('register', False):
     st.session_state.register = False
     try:
         with center_col:
@@ -121,4 +117,20 @@ if st.session_state.get('register', False):
         st.stop()
     except requests.exceptions.RequestException as e:
         center_col.error(f"Error connecting to the server: {e}")
+        st.stop()
+
+if st.session_state.get('reset_password', False):
+    payload: dict[str, str] = {
+        'email': st.session_state.get('email', '')
+    }
+    try:
+        with center_col:
+            with st.spinner('Sending password reset email...', show_time=True):
+                response = requests.post(f'{FAST_API_BASE_URL}/auth/reset-password/',
+                                         json=payload,
+                                         timeout=(FAST_API_CONNECT_TIMEOUT,
+                                                  FAST_API_READ_TIMEOUT))
+                response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        center_col.error(f'Error connecting to the server: {e}')
         st.stop()

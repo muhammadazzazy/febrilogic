@@ -85,3 +85,6 @@ PROMPT_TEMPLATE: Final[Path] = BASE_DIR / \
 
 SUPPORT_REQUEST_TEMPLATE: Final[Path] = APIS_DIR / Path(
     os.environ.get('SUPPORT_REQUEST_TEMPLATE'))
+
+PASSWORD_RESET_EMAIL_TEMPLATE: Final[Path] = APIS_DIR / Path(
+    os.environ.get('PASSWORD_RESET_EMAIL_TEMPLATE'))

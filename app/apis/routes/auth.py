@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from apis.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
+    PASSWORD_RESET_EMAIL_TEMPLATE,
     RENDER_EXTERNAL_HOST,
     RESEND_API_KEY,
     RESEND_MAX_RETRIES,
@@ -27,9 +28,10 @@ from apis.config import (
 
 from apis.db.database import get_db
 
-from apis.models.user_request import UserRequest
-from apis.models.token import Token
 from apis.models.model import User
+from apis.models.password_reset_request import PasswordResetRequest
+from apis.models.token import Token
+from apis.models.user_request import UserRequest
 
 resend.api_key = RESEND_API_KEY
 
@@ -151,6 +153,50 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     user.verification_code = None
     db.commit()
     return RedirectResponse(url=STREAMLIT_BASE_URL + '/Login',)
+
+
+@api_router.post('/reset-password')
+def reset_password(request: PasswordResetRequest, db: Session = Depends(get_db)):
+    """Reset the password for a user."""
+    email: str = request.email.strip().lower()
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found.'
+        )
+    new_password: str = str(uuid4())[:8]
+    user.hashed_password = bcrypt_context.hash(new_password)
+    db.commit()
+    db.refresh(user)
+    send_password_reset_email(email=email, new_password=new_password)
+    return {'message': f'Password reset email sent to {email}'}
+
+
+def send_password_reset_email(*, email: str, new_password: str) -> None:
+    """Send a password reset email to the user."""
+    with open(PASSWORD_RESET_EMAIL_TEMPLATE, encoding='utf-8') as file:
+        template = Template(file.read())
+    html = template.render(
+        new_password=new_password,
+        current_year=datetime.now().year
+    )
+    params: resend.Emails.SendParams = {
+        "from": "FebriLogic <noreply@febrilogic.com>",
+        "to": [email],
+        "subject": "Password Reset",
+        "html": html
+    }
+    for _i in range(RESEND_MAX_RETRIES):
+        email: resend.Email = resend.Emails.send(params)
+        if email and 'id' in email:
+            return {
+                'message': f"Password reset email {email['id']} sent to {email}"
+            }
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=f'Failed to send password reset email to {email} after {RESEND_MAX_RETRIES} attempts.'
+    )
 
 
 def send_verification_email(*, to_email: str, verification_code: str) -> None:

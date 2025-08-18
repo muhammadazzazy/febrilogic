@@ -131,6 +131,8 @@ if st.session_state.get('reset_password', False):
                                          timeout=(FAST_API_CONNECT_TIMEOUT,
                                                   FAST_API_READ_TIMEOUT))
                 response.raise_for_status()
+            center_col.success(
+                f"Password reset email sent to {st.session_state.get('email', '')}", icon='✅')
     except requests.exceptions.RequestException as e:
         center_col.error(f'Error connecting to the server: {e}')
         st.stop()

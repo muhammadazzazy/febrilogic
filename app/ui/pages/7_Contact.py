@@ -68,13 +68,13 @@ if submitted:
                     json=payload,
                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT),
                     headers={
-                        'Authorization': f'Bearer {st.session_state.get("token", "")}',
+                        'Authorization': f"Bearer {st.session_state.get('token', '')}",
                     }
                 )
                 response.raise_for_status()
 
         columns[1].success(
-            "Thanks for reaching out! We'll get back to you soon", icon=':material/check_circle:')
+            "Thanks for reaching out! We'll get back to you soon", icon='✅')
         time.sleep(2)
     except HTTPError:
         detail: str = response.json().get('detail', 'Unknown error occurred.')

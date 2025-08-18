@@ -45,13 +45,12 @@ with center_col.form('login_form', border=True):
         use_container_width=True,
         icon='📝'
     )
-
-
-st.session_state.reset_password = center_col.button(
-    label='Reset password',
-    use_container_width=True,
-    icon='🔄'
-)
+    button_cols = st.columns(1, gap='small', border=False)
+    st.session_state.reset_password = button_cols[0].form_submit_button(
+        label='Reset password',
+        use_container_width=True,
+        icon='🔄'
+    )
 
 
 if st.session_state.get('login', False) or st.session_state.get('register', False):
@@ -126,7 +125,7 @@ if st.session_state.get('reset_password', False):
     try:
         with center_col:
             with st.spinner('Sending password reset email...', show_time=True):
-                response = requests.post(f'{FAST_API_BASE_URL}/auth/reset-password/',
+                response = requests.post(f'{FAST_API_BASE_URL}/auth/reset-password',
                                          json=payload,
                                          timeout=(FAST_API_CONNECT_TIMEOUT,
                                                   FAST_API_READ_TIMEOUT))

@@ -37,7 +37,7 @@ if st.session_state.cookies_accepted is None:
     consent_cookie()
 
 if st.session_state.cookies_accepted:
-    st.markdown("""#### FebriLogic is an automated tool based on a novel algorithm that leverages real-world data to assist healthcare professionals in the differential diagnosis of AFIs.""", )
+    st.markdown("""#### FebriLogic is an automated tool based on a novel algorithm that leverages real-world data to assist healthcare professionals in the differential diagnosis of acute febrile illnesses (AFIs). In addition to diagnostic assistance, FebriLogic harnesses the power of AI to provide recommendations for further testing and clinical management procedures. FebriLogic suggests the 3 most probable diagnoses from a list of 10 of the most prevalent AFIs.""")
 
     st.info("""*FebriLogic is funded by a grant from the Bartlett Foundation,
         [The American University in Cairo](https://www.aucegypt.edu/)

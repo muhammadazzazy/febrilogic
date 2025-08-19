@@ -56,12 +56,12 @@ async def login_for_access_token(
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail='Incorrect email or password',
         )
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User is not verified",
+            detail='User is not verified',
         )
     token = create_access_token(user.email, user.id, timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
@@ -108,6 +108,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
 @api_router.post('/', status_code=status.HTTP_201_CREATED)
 async def create_user(user_request: UserRequest,
+                      background_tasks: BackgroundTasks,
                       db: Session = Depends(get_db)):
     """Create a new user in the database."""
     existing_user = db.query(User).filter(
@@ -127,14 +128,13 @@ async def create_user(user_request: UserRequest,
         )
         db.add(user_model)
         db.commit()
-        send_verification_email(to_email=user_request.email,
-                                verification_code=verification_code)
-
+        background_tasks.add(send_verification_email(to_email=user_request.email,
+                                                     verification_code=verification_code))
     if existing_user and not existing_user.is_verified:
         verification_code: str = existing_user.verification_code
-        send_verification_email(
+        background_tasks.add(send_verification_email(
             to_email=user_request.email, verification_code=verification_code
-        )
+        ))
     return {
         'message': f'Verification link sent to your email: {user_request.email}'
     }
@@ -153,7 +153,7 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     user.is_verified = True
     user.verification_code = None
     db.commit()
-    return RedirectResponse(url=STREAMLIT_BASE_URL + '/Login',)
+    return RedirectResponse(url=f'{STREAMLIT_BASE_URL}/Login')
 
 
 @api_router.post('/request-password-reset')
@@ -164,7 +164,7 @@ def request_password_reset(request: PasswordResetRequest,
     email: str = request.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
     if user:
-        exp = datetime.now() + timedelta(minutes=15)
+        exp = datetime.now() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode = {'sub': email, 'exp': exp}
         token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         background_tasks.add_task(send_password_reset_email,
@@ -188,7 +188,7 @@ def reset_password(form: ResetPasswordForm, db: Session = Depends(get_db)) -> No
                 detail='Invalid token.'
             )
         db.query(User).filter(User.email == email).update(
-            {"hashed_password": bcrypt_context.hash(form.new_password)}
+            {'hashed_password': bcrypt_context.hash(form.new_password)}
         )
         db.commit()
     except jwt.ExpiredSignatureError as exc:
@@ -208,10 +208,10 @@ def send_password_reset_email(*, email: str, token: str) -> None:
         current_year=datetime.now().year
     )
     params: resend.Emails.SendParams = {
-        "from": "FebriLogic <recovery@febrilogic.com>",
-        "to": [email],
-        "subject": "Password Reset",
-        "html": html
+        'from': 'FebriLogic <recovery@febrilogic.com>',
+        'to': [email],
+        'subject': 'Password Reset',
+        'html': html
     }
     for _i in range(RESEND_MAX_RETRIES):
         email: resend.Email = resend.Emails.send(params)
@@ -232,10 +232,10 @@ def send_verification_email(*, to_email: str, verification_code: str) -> None:
     html = template.render(
         verification_url=f'{RENDER_EXTERNAL_HOST}/auth/verify/{verification_code}')
     params: resend.Emails.SendParams = {
-        "from": "FebriLogic <noreply@febrilogic.com>",
-        "to": [to_email],
-        "subject": "Verify your email",
-        "html": html
+        'from': 'FebriLogic <verify@febrilogic.com>',
+        'to': [to_email],
+        'subject': 'Verify your email',
+        'html': html
     }
     for _i in range(RESEND_MAX_RETRIES):
         email: resend.Email = resend.Emails.send(params)

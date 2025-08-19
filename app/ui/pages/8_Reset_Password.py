@@ -9,8 +9,6 @@ st.set_page_config(
     layout='wide'
 )
 
-st.title('Reset Password')
-
 query_params = st.query_params
 token: str | None = query_params.get('token')
 
@@ -18,6 +16,7 @@ if not token:
     st.error('Invalid reset link.')
     st.stop()
 
+st.title('Reset Password')
 
 cols = st.columns(3, gap='small', border=False)
 

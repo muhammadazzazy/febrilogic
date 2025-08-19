@@ -204,7 +204,7 @@ def send_password_reset_email(*, email: str, token: str) -> None:
     with open(PASSWORD_RESET_EMAIL_TEMPLATE, encoding='utf-8') as file:
         template = Template(file.read())
     html = template.render(
-        reset_link=f'{STREAMLIT_BASE_URL}/Reset_Password?token={token}',
+        reset_link=f'{STREAMLIT_BASE_URL}/reset-password?token={token}',
         current_year=datetime.now().year
     )
     params: resend.Emails.SendParams = {

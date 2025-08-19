@@ -165,7 +165,7 @@ if st.session_state.get('ready', False):
             response.raise_for_status()
         st.success('Patient symptoms submitted successfully.', icon='✅')
         time.sleep(1.5)
-        st.switch_page('./pages/5_Biomarkers.py')
+        st.switch_page('./pages/6_Biomarkers.py')
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()

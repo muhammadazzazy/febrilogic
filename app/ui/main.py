@@ -1,5 +1,5 @@
 import streamlit as st
-from st_pages import get_nav_from_toml, hide_pages
+from st_pages import get_nav_from_toml
 
 st.set_page_config(
     page_title='FebriLogic',

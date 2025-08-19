@@ -260,10 +260,10 @@ if st.session_state.get('ready', False):
             st.warning('No changes detected in patient information.',
                        icon='⚠️')
             time.sleep(1.5)
-            st.switch_page('./pages/3_Disease-Specific_Tests.py')
+            st.switch_page('./pages/4_Disease-Specific_Tests.py')
     patient_id: int = submit_patient_info(route, body)
     st.session_state.patient_id = patient_id
     st.session_state.patient_ids.append(patient_id)
     st.success('Patient information submitted successfully.', icon='✅')
     time.sleep(1.5)
-    st.switch_page('./pages/3_Disease-Specific_Tests.py')
+    st.switch_page('./pages/4_Disease-Specific_Tests.py')

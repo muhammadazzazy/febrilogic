@@ -3,6 +3,12 @@ import streamlit as st
 
 from config import FEBRILOGIC_LOGO, UN_SDG_3, UN_SDG_5, UN_SDG_8, UN_SDG_9, UN_SDG_11
 
+st.set_page_config(
+    page_icon='assets/febrilogic.png',
+    layout='wide',
+    initial_sidebar_state='expanded'
+)
+
 st.title(':blue[FebriLogic]')
 
 st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')

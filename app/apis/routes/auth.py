@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import uuid4
 
 import resend
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jinja2 import Template
@@ -30,6 +30,7 @@ from apis.db.database import get_db
 
 from apis.models.model import User
 from apis.models.password_reset_request import PasswordResetRequest
+from apis.models.reset_password_form import ResetPasswordForm
 from apis.models.token import Token
 from apis.models.user_request import UserRequest
 
@@ -155,34 +156,59 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     return RedirectResponse(url=STREAMLIT_BASE_URL + '/Login',)
 
 
-@api_router.post('/reset-password')
-def reset_password(request: PasswordResetRequest, db: Session = Depends(get_db)):
-    """Reset the password for a user."""
+@api_router.post('/request-password-reset')
+def request_password_reset(request: PasswordResetRequest,
+                           background_tasks: BackgroundTasks,
+                           db: Session = Depends(get_db)) -> None:
+    """Request a password reset for a user."""
     email: str = request.email.strip().lower()
     user = db.query(User).filter(User.email == email).first()
-    if not user:
+    if user:
+        exp = datetime.now() + timedelta(minutes=15)
+        to_encode = {'sub': email, 'exp': exp}
+        token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        background_tasks.add_task(send_password_reset_email,
+                                  email=email, token=token)
+    else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='User not found.'
         )
-    new_password: str = str(uuid4())[:8]
-    user.hashed_password = bcrypt_context.hash(new_password)
-    db.commit()
-    db.refresh(user)
-    send_password_reset_email(email=email, new_password=new_password)
-    return {'message': f'Password reset email sent to {email}'}
 
 
-def send_password_reset_email(*, email: str, new_password: str) -> None:
+@api_router.post('/reset-password')
+def reset_password(form: ResetPasswordForm, db: Session = Depends(get_db)) -> None:
+    """Reset the user's password."""
+    try:
+        payload = jwt.decode(form.token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get('sub')
+        if email is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Invalid token.'
+            )
+        db.query(User).filter(User.email == email).update(
+            {"hashed_password": bcrypt_context.hash(form.new_password)}
+        )
+        db.commit()
+    except jwt.ExpiredSignatureError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Token has expired.') from exc
+    except jwt.JWTError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail='Invalid token.') from exc
+
+
+def send_password_reset_email(*, email: str, token: str) -> None:
     """Send a password reset email to the user."""
     with open(PASSWORD_RESET_EMAIL_TEMPLATE, encoding='utf-8') as file:
         template = Template(file.read())
     html = template.render(
-        new_password=new_password,
+        reset_link=f'{STREAMLIT_BASE_URL}/Reset_Password?token={token}',
         current_year=datetime.now().year
     )
     params: resend.Emails.SendParams = {
-        "from": "FebriLogic <noreply@febrilogic.com>",
+        "from": "FebriLogic <recovery@febrilogic.com>",
         "to": [email],
         "subject": "Password Reset",
         "html": html
@@ -191,11 +217,11 @@ def send_password_reset_email(*, email: str, new_password: str) -> None:
         email: resend.Email = resend.Emails.send(params)
         if email and 'id' in email:
             return {
-                'message': f"Password reset email {email['id']} sent to {email}"
+                'message': f"Password reset email with ID {email['id']} sent."
             }
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f'Failed to send password reset email to {email} after {RESEND_MAX_RETRIES} attempts.'
+        detail=f'Failed to send password reset email after {RESEND_MAX_RETRIES} attempts.'
     )
 
 

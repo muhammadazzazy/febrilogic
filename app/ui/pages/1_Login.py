@@ -125,7 +125,7 @@ if st.session_state.get('reset_password', False):
     try:
         with center_col:
             with st.spinner('Sending password reset email...', show_time=True):
-                response = requests.post(f'{FAST_API_BASE_URL}/auth/reset-password',
+                response = requests.post(f'{FAST_API_BASE_URL}/auth/request-password-reset',
                                          json=payload,
                                          timeout=(FAST_API_CONNECT_TIMEOUT,
                                                   FAST_API_READ_TIMEOUT))

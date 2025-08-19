@@ -19,7 +19,7 @@ st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
 MINIMUM_MESSAGE_LENGTH: Final[int] = 10
 
-st.header('📧 Contact Us')
+st.title('📧 Contact Us')
 
 columns = st.columns(3, gap='small', border=False)
 with columns[1].form('contact_form'):

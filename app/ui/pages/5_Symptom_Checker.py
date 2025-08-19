@@ -41,7 +41,7 @@ if st.session_state.get('patient_id') == 0:
     st.error('Please select a patient to proceed.')
     st.stop()
 
-st.header('🩺 Symptom Checker')
+st.title('🩺 Symptom Checker')
 
 
 cols = st.columns(5, gap='large', border=False)

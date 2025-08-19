@@ -32,7 +32,7 @@ else:
     st.error('Please log in to access the patient information.')
     st.stop()
 
-st.header('ℹ️ Patient Information')
+st.title('ℹ️ Patient Information')
 
 cols = st.columns(3, gap='small', border=False)
 cols[0].subheader(f"**Date:** {datetime.now().strftime('%d-%m-%Y')}")

@@ -16,7 +16,7 @@ if not token:
     st.error('Invalid reset link.')
     st.stop()
 
-st.title('Reset Password')
+st.title('🔓 Reset Password')
 
 cols = st.columns(3, gap='small', border=False)
 

@@ -203,7 +203,7 @@ if submitted:
         st.success('Patient biomarkers submitted successfully!')
         time.sleep(2)
         st.session_state.biomarkers_loaded = False
-        st.switch_page('./pages/7_Results.py')
+        st.switch_page('./pages/8_Results.py')
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()

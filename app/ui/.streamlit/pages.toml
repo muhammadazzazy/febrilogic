@@ -4,50 +4,49 @@ name = "Home"
 icon = "🏠"
 
 [[pages]]
-path = "pages/2_Login.py"
-name = "Login"
+path = "pages/2_Login_Register.py"
+name = "Login / Register"
 icon = "🔑"
-url_path = "login"
+url_path = "login-register"
 
 [[pages]]
-path = "pages/3_Patient_Information.py"
+path = "pages/3_Reset_Password.py"
+name = "Reset Password"
+icon = "🔓"
+url_path = "reset-password"
+
+[[pages]]
+path = "pages/4_Patient_Information.py"
 name = "Patient Information"
 icon = "ℹ️"
 url_path = "patient-information"
 
 [[pages]]
-path = "pages/4_Disease-Specific_Tests.py"
+path = "pages/5_Disease-Specific_Tests.py"
 name = "Disease-Specific Tests"
 icon = ":material/lab_panel:"
 url_path = "disease-specific-tests"
 
 [[pages]]
-path = "pages/5_Symptom_Checker.py"
+path = "pages/6_Symptom_Checker.py"
 name = "Symptom Checker"
 icon = "🩺"
 url_path = "symptom-checker"
 
 [[pages]]
-path = "pages/6_Biomarkers.py"
+path = "pages/7_Biomarkers.py"
 name = "Biomarkers"
 icon = "🔬"
 url_path = "biomarkers"
 
 [[pages]]
-path = "pages/7_Results.py"
+path = "pages/8_Results.py"
 name = "Results"
 icon = "📊"
 url_path = "results"
 
 [[pages]]
-path = "pages/8_Contact.py"
+path = "pages/9_Contact_Us.py"
 name = "Contact Us"
 icon = "📧"
 url_path = "contact"
-
-
-[[pages]]
-path = "pages/9_Reset_Password.py"
-name = "Reset Password"
-icon = "🔓"
-url_path = "reset-password"

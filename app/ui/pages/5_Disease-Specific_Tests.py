@@ -128,7 +128,7 @@ if submitted:
             response.raise_for_status()
         st.success('Negative diseases submitted successfully.')
         time.sleep(2)
-        st.switch_page('./pages/5_Symptom_Checker.py')
+        st.switch_page('./pages/6_Symptom_Checker.py')
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         time.sleep(2)

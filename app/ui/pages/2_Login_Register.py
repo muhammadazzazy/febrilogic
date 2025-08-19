@@ -88,7 +88,7 @@ if st.session_state.get('login', False):
             token = response.json().get('access_token', '')
             st.session_state.token = token
             controller.set('token', token)
-        st.switch_page('./pages/3_Patient_Information.py')
+        st.switch_page('./pages/4_Patient_Information.py')
     except HTTPError:
         error_detail = response.json().get('detail', 'Unknown error')
         center_col.error(f'Login unsuccessful: {error_detail}')

@@ -1,7 +1,7 @@
 """Run the FebriDx multi-page Streamlit application."""
 import streamlit as st
 
-from config import FEBRILOGIC_LOGO, UN_SDG_3, UN_SDG_5, UN_SDG_8, UN_SDG_9, UN_SDG_11
+from config import FEBRILOGIC_LOGO, UN_SDG_3, UN_SDG_5, UN_SDG_8, UN_SDG_9, UN_SDG_11, STREAMLIT_BASE_URL
 
 st.set_page_config(
     page_icon='assets/febrilogic.png',
@@ -20,9 +20,8 @@ if 'cookies_accepted' not in st.session_state:
 @st.dialog('Cookies 🍪')
 def consent_cookie() -> None:
     """Show cookie consent dialog."""
-    st.markdown("""We use cookies to improve your experience on our site,
-                so you don't login every time you come back to the app.
-                There's no privacy policy yet.""")
+    st.markdown(f"""We use cookies to improve your experience on our site,
+                so you don't login every time you come back to the app. Please see our [Privacy Policy]({STREAMLIT_BASE_URL}/privacy-policy).""")
     c1, c2 = st.columns(2, gap='small')
     if c1.button('Accept Cookies', use_container_width=True, type='primary'):
         st.session_state.cookies_accepted = True

@@ -22,4 +22,8 @@ UN_SDG_8: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-8.png'
 UN_SDG_9: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-9.png'
 UN_SDG_11: Final[str] = Path(__file__).parent.parent / 'assets' / 'sdg-11.png'
 
+STREAMLIT_BASE_URL: Final[str] = st.secrets.get(
+    'STREAMLIT_BASE_URL', 'http://localhost:8501'
+)
+
 controller = CookieController()

@@ -50,3 +50,9 @@ path = "pages/9_Contact_Us.py"
 name = "Contact Us"
 icon = "📧"
 url_path = "contact"
+
+[[pages]]
+path = "pages/10_Privacy_Policy.py"
+name = "Privacy Policy"
+icon = "🛡️"
+url_path = "privacy-policy"

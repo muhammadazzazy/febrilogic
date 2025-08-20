@@ -28,7 +28,7 @@ FAST_API_HOST: Final[str] = os.environ.get('FAST_API_HOST', '0.0.0.0')
 FAST_API_PORT: Final[int] = int(os.environ.get('FAST_API_PORT', 8000))
 
 RENDER_EXTERNAL_HOST: Final[str] = os.environ.get(
-    'RENDER_EXTERNAL_HOST', 'https://api.febrilogic.com')
+    'RENDER_EXTERNAL_HOST')
 
 STREAMLIT_BASE_URL: Final[str] = os.environ.get(
     'STREAMLIT_BASE_URL', 'https://www.febrilogic.com')

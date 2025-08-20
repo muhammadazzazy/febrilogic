@@ -54,7 +54,6 @@ with center_col.form('login_form', border=True):
 
 
 if st.session_state.get('login', False) or st.session_state.get('register', False):
-    st.session_state.login = True
     missing_fields: list[str] = []
     if not st.session_state.get('email', '').strip():
         missing_fields.append('Email')

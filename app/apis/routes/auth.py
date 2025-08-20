@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from apis.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     ALGORITHM,
+    FAST_API_PORT,
     PASSWORD_RESET_EMAIL_TEMPLATE,
     RENDER_EXTERNAL_HOST,
     RESEND_API_KEY,
@@ -128,11 +129,11 @@ async def create_user(user_request: UserRequest,
         )
         db.add(user_model)
         db.commit()
-        background_tasks.add(send_verification_email(to_email=user_request.email,
-                                                     verification_code=verification_code))
+        background_tasks.add_task(send_verification_email(to_email=user_request.email,
+                                                          verification_code=verification_code))
     if existing_user and not existing_user.is_verified:
         verification_code: str = existing_user.verification_code
-        background_tasks.add(send_verification_email(
+        background_tasks.add_task(send_verification_email(
             to_email=user_request.email, verification_code=verification_code
         ))
     return {
@@ -153,7 +154,7 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     user.is_verified = True
     user.verification_code = None
     db.commit()
-    return RedirectResponse(url=f'{STREAMLIT_BASE_URL}/Login')
+    return RedirectResponse(url=f'{STREAMLIT_BASE_URL}/login-register')
 
 
 @api_router.post('/request-password-reset')
@@ -229,8 +230,12 @@ def send_verification_email(*, to_email: str, verification_code: str) -> None:
     """Send a verification email to the user."""
     with open(VERIFICATION_EMAIL_TEMPLATE, encoding='utf-8') as file:
         template = Template(file.read())
-    html = template.render(
-        verification_url=f'{RENDER_EXTERNAL_HOST}/auth/verify/{verification_code}')
+    if RENDER_EXTERNAL_HOST is None:
+        html = template.render(
+            verification_url=f'http://localhost:{FAST_API_PORT}/auth/verify/{verification_code}')
+    else:
+        html = template.render(
+            verification_url=f'{RENDER_EXTERNAL_HOST}/auth/verify/{verification_code}')
     params: resend.Emails.SendParams = {
         'from': 'FebriLogic <verify@febrilogic.com>',
         'to': [to_email],

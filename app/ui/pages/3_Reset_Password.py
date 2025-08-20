@@ -12,7 +12,7 @@ st.set_page_config(
 query_params = st.query_params
 token: str | None = query_params.get('token')
 
-if not token and not st.session_state.get('token'):
+if not token:
     st.error('Invalid reset link.')
     st.stop()
 

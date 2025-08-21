@@ -208,7 +208,6 @@ __marimo__/
 
 data/
 assets/private
-assets/public
 scripts/
 .env.local
 app/ui/.streamlit/secrets.toml

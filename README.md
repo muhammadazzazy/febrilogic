@@ -323,25 +323,27 @@ To get a local copy up and running follow these simple example steps.
 
   - [x] POST `/api/patient/{id}/calculate` - calculate the probabilities of diseases and obtain the top 3 diseases
 
-- [x] LLM integration APIs:
-
-  - [x] POST `/api/patient/{id}/generate/groq` - generate a clinical decision support report via Groq LLM
-
-  - [x] POST `/api/patient/{id}/generate/openrouter` - generate a clinical decision support report via OpenRouter LLM
-
-- [x] GET `/api/countries` - fetch a listing of all countries (alphabetical)
-
-- [x] GET `/api/diseases` - fetch a listing of all possible diseases a patient can test negative for
-
-- [x] GET `/api/symptoms/categories-definitions` - fetch a mapping between the symptom category, associated symptoms, and their definitions
-
 - [x] Biomarker data APIs:
 
   - [x] GET `/api/biomarkers` - fetch metadata of biomarkers from the database
 
   - [x] GET `/api/biomarkers/units` - fetch from the database a mapping between the biomarkers and their corresponding units
 
-- [x] POST `/api/contact` - send support requests with sender's name and email, subject, and body to FebriLogic's support email address
+- [x] LLM integration APIs:
+
+  - [x] POST `/api/patient/{id}/generate/groq` - generate a clinical decision support report via Groq LLM
+
+  - [x] POST `/api/patient/{id}/generate/openrouter` - generate a clinical decision support report via OpenRouter LLM
+
+- [x] Utility APIs:
+
+  - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical)
+
+  - [x] GET `/api/diseases` - fetch a listing of all possible diseases a patient can test negative for
+
+  - [x] GET `/api/symptoms/categories-definitions` - fetch a mapping between the symptom category, associated symptoms, and their definitions
+
+  - [x] POST `/api/contact` - send support requests with sender's name and email, subject, and body to FebriLogic's support email address
 
 - [x] Authentication APIs:
   - [x] POST `/auth/` - register a new user
@@ -356,7 +358,7 @@ To get a local copy up and running follow these simple example steps.
   - [x] cookie consent dialog
   - [x] description of what FebriLogic is
   - [x] note indicating the foundation funding the effort
-  - [x] supported Sustainable Development Goals (SDGs)
+  - [x] supported United Nations (UN) Sustainable Development Goals (SDGs)
   - [x] disclaimer on tool usage
 
 - [x] Login/Register page:

@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session
 from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
     GROQ_API_KEY, GROQ_MODEL, GROQ_URL, GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT,
-    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL, OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
+    OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
+    OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
     PROMPT_TEMPLATE
 )
 from apis.db.database import get_db
@@ -41,7 +42,7 @@ api_router: APIRouter = APIRouter(
 def upload_patient_data(patient_request: PatientRequest,
                         user: Annotated[dict, Depends(get_current_user)],
                         db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Upload patient personal information to the SQLite database."""
+    """Upload patient personal information to the database."""
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')

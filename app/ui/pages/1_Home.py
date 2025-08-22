@@ -1,7 +1,11 @@
-"""Run the FebriDx multi-page Streamlit application."""
+"""Shows the home page."""
 import streamlit as st
 
-from config import FEBRILOGIC_LOGO, UN_SDG_3, UN_SDG_5, UN_SDG_8, UN_SDG_9, UN_SDG_11, STREAMLIT_BASE_URL
+from config import (
+    FEBRILOGIC_LOGO,
+    UN_SDG_3, UN_SDG_5, UN_SDG_8, UN_SDG_9, UN_SDG_11,
+    STREAMLIT_BASE_URL
+)
 
 st.set_page_config(
     page_icon='assets/febrilogic.png',

@@ -3,8 +3,9 @@ from st_pages import get_nav_from_toml
 
 st.set_page_config(
     page_title='FebriLogic',
+    page_icon='assets/febrilogic.png',
     layout='wide',
-    initial_sidebar_state='expanded'
+    initial_sidebar_state='expanded',
 )
 
 nav = get_nav_from_toml()

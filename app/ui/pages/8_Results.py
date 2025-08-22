@@ -7,7 +7,12 @@ import streamlit as st
 from requests.exceptions import HTTPError
 from pandas import DataFrame
 
-from config import controller, FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT, FEBRILOGIC_LOGO
+from config import (
+    controller,
+    FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT,
+    FEBRILOGIC_LOGO
+)
+
 
 st.set_page_config(
     page_title='Results',

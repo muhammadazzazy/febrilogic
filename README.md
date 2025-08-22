@@ -309,7 +309,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### FastAPI Backend
 
-- [x] Patient data APIs:
+- [x] Implement patient data APIs:
 
   - [x] POST `/api/patient` - add a patient
 
@@ -323,19 +323,19 @@ To get a local copy up and running follow these simple example steps.
 
   - [x] POST `/api/patient/{id}/calculate` - calculate the probabilities of diseases and obtain the top 3 diseases
 
-- [x] Biomarker data APIs:
+- [x] Implement biomarker data APIs:
 
   - [x] GET `/api/biomarkers` - fetch metadata of biomarkers from the database
 
   - [x] GET `/api/biomarkers/units` - fetch from the database a mapping between the biomarkers and their corresponding units
 
-- [x] LLM integration APIs:
+- [x] Implement LLM integration APIs:
 
   - [x] POST `/api/patient/{id}/generate/groq` - generate a clinical decision support report via Groq LLM
 
   - [x] POST `/api/patient/{id}/generate/openrouter` - generate a clinical decision support report via OpenRouter LLM
 
-- [x] Utility APIs:
+- [x] Implement utility APIs:
 
   - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical)
 
@@ -345,7 +345,7 @@ To get a local copy up and running follow these simple example steps.
 
   - [x] POST `/api/contact` - send support requests with sender's name and email, subject, and body to FebriLogic's support email address
 
-- [x] Authentication APIs:
+- [x] Implement authentication APIs:
   - [x] POST `/auth/` - register a new user
   - [x] POST `/auth/token` - login to the app and obtain JWT token
   - [x] POST `/auth/request-password-reset` - send password reset email
@@ -353,7 +353,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### Streamlit Frontend
 
-- [x] Home page:
+- [x] Add Home page:
 
   - [x] cookie consent dialog
   - [x] description of what FebriLogic is
@@ -361,30 +361,30 @@ To get a local copy up and running follow these simple example steps.
   - [x] supported United Nations (UN) Sustainable Development Goals (SDGs)
   - [x] disclaimer on tool usage
 
-- [x] Login/Register page:
+- [x] Add Login/Register page:
 
   - [x] form for user login/registration
   - [x] option to reset password after entering email
 
-- [x] Reset Password page
+- [x] Add Reset Password page
 
-- [x] Patient Information page – add a new patient or view existing patient info
+- [x] Add Patient Information page – add a new patient or view existing patient info
 
-- [x] Disease-Specific Tests page – submit patient negative test results
+- [x] Add Disease-Specific Tests page – submit patient negative test results
 
-- [x] Symptom Checker page - submit patient symptoms
+- [x] Add Symptom Checker page - submit patient symptoms
 
-- [x] Biomarkers page – submit patient biomarkers (abbreviation, value, unit)
+- [x] Add Biomarkers page – submit patient biomarkers (abbreviation, value, unit)
 
-- [x] Results page – select patient and view:
+- [x] Add Results page – select patient and view:
 
   - [x] ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
 
   - [x] clinical decision support report from LLM
 
-- [x] Contact Us page – send support emails
+- [x] Add Contact Us page – send support emails
 
-- [x] Privacy Policy page – GDPR privacy policy
+- [x] Add Privacy Policy page – GDPR privacy policy
 
 See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).
 

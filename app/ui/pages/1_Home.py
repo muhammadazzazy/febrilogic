@@ -8,7 +8,7 @@ from config import (
 )
 
 st.set_page_config(
-    page_icon='assets/febrilogic.png',
+    page_icon=FEBRILOGIC_LOGO,
     layout='wide',
     initial_sidebar_state='expanded'
 )

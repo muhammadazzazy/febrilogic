@@ -1,20 +1,16 @@
-from pathlib import Path
-from typing import Final
-
 import streamlit as st
 from st_pages import get_nav_from_toml
 
+from config import FEBRILOGIC_LOGO, PAGES_TOML
+
 st.set_page_config(
     page_title='FebriLogic',
-    page_icon='assets/febrilogic.png',
+    page_icon=FEBRILOGIC_LOGO,
     layout='wide',
     initial_sidebar_state='expanded',
 )
 
-BASE_DIR: Final[Path] = Path(__file__).parent
-PAGES_PATH: Final[Path] = BASE_DIR / '.streamlit' / 'pages.toml'
-
-nav = get_nav_from_toml(PAGES_PATH)
+nav = get_nav_from_toml(PAGES_TOML)
 
 pg = st.navigation(nav)
 

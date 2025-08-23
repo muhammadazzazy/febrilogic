@@ -24,7 +24,7 @@ url_path = "patient-information"
 [[pages]]
 path = "pages/5_Disease-Specific_Tests.py"
 name = "Disease-Specific Tests"
-icon = ":material/lab_panel:"
+icon = "🧪"
 url_path = "disease-specific-tests"
 
 [[pages]]

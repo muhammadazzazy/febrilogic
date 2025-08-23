@@ -131,17 +131,24 @@ To get a local copy up and running follow these simple example steps.
    - [OpenRouter](https://openrouter.ai)
 
 2. Clone the repo
+
    ```sh
    git clone https://github.com/muhammadazzazy/febrilogic.git
    ```
 
+3. Navigate into the project directory
+
+   ```sh
+   cd febrilogic
+   ```
+
 #### Running the FastAPI Backend
 
-3. Navigate into [app/apis](app/apis)
+4. Navigate into [app/apis](app/apis)
    ```sh
-   cd febrilogic/app/apis
+   cd app/apis
    ```
-4. Create a .env file
+5. Create a .env file
 
    ```.env
    # Required file path for the symptom and disease data.
@@ -214,7 +221,7 @@ To get a local copy up and running follow these simple example steps.
    PASSWORD_RESET_EMAIL_TEMPLATE="html/password_reset_email.html"
    ```
 
-5. Create a virtual environment for backend
+6. Create a virtual environment for backend
 
    ```sh
    # Linux
@@ -224,7 +231,7 @@ To get a local copy up and running follow these simple example steps.
    python -m venv .venv
    ```
 
-6. Activate the virtual environment
+7. Activate the virtual environment
 
    ```sh
    # Linux
@@ -234,35 +241,35 @@ To get a local copy up and running follow these simple example steps.
    .\.venv\Scripts\activate
    ```
 
-7. Install backend dependencies
+8. Install backend dependencies
 
    ```sh
    pip install -r requirements.txt
    ```
 
-8. Navigate out of the [app/apis](app/apis) directory
+9. Navigate out of the [app/apis](app/apis) directory
    ```sh
    cd ..
    ```
-9. Run the FastAPI app
+10. Run the FastAPI app
 
-   ```sh
-   # Linux
-   python3 -m apis.main
+    ```sh
+    # Linux
+    python3 -m apis.main
 
-   # Windows
-   python -m apis.main
-   ```
+    # Windows
+    python -m apis.main
+    ```
 
 #### Running the Streamlit Frontend
 
-10. Navigate into [app/ui](app/ui)
+11. Navigate into [ui](app/ui)
 
     ```sh
-    cd app/ui
+    cd ui
     ```
 
-11. Create a `secrets.toml` file inside [app/ui/.streamlit](app/ui/.streamlit)
+12. Create a `secrets.toml` file inside [app/ui/.streamlit](app/ui/.streamlit)
 
     ```toml
     FAST_API_BASE_URL = "http://localhost:8000"
@@ -270,7 +277,7 @@ To get a local copy up and running follow these simple example steps.
     FAST_API_READ_TIMEOUT = 30
     ```
 
-12. Create the virtual environment for frontend
+13. Create the virtual environment for frontend
 
     ```sh
     # Linux
@@ -280,7 +287,7 @@ To get a local copy up and running follow these simple example steps.
     python -m venv .venv
     ```
 
-13. Activate the virtual environment
+14. Activate the virtual environment
 
     ```sh
     # Linux
@@ -290,13 +297,13 @@ To get a local copy up and running follow these simple example steps.
     .\.venv\Scripts\activate
     ```
 
-14. Install frontend dependencies
+15. Install frontend dependencies
 
     ```sh
     pip install -r requirements.txt
     ```
 
-15. Run the Streamlit app
+16. Run the Streamlit app
     ```sh
     streamlit run main.py
     ```
@@ -311,42 +318,33 @@ To get a local copy up and running follow these simple example steps.
 
 - [x] Implement patient data APIs:
 
-  - [x] POST `/api/patient` - add a patient
+  - [x] POST `/api/patient/{id}` - add a patient to the `patients` table in the Postgres database
+  - [x] GET `/api/patient` - fetch patient information from the `patients` table in the Postgres database
 
-  - [x] GET `/api/patient/{id}` - fetch patient information
-
-  - [x] POST `/api/patient/{id}/diseases` - add diseases the patient tested negative for
-
-  - [x] POST `/api/patient/{id}/symptoms` - add patient symptoms
-
-  - [x] POST `/api/patient/{id}/biomarkers` - add patient biomarkers
-
-  - [x] POST `/api/patient/{id}/calculate` - calculate the probabilities of diseases and obtain the top 3 diseases
+  - [x] POST `/api/patient/{id}/diseases` - add diseases the patient tested negative for to the `patient_negative_diseases` table in the Postgres database
+  - [x] POST `/api/patient/{id}/symptoms` - add patient symptoms to the `patient_symptoms` table in the Postgres database
+  - [x] POST `/api/patient/{id}/biomarkers` - add patient biomarkers to the `patient_biomarkers` table in the Postgres database
+  - [x] POST `/api/patient/{id}/calculate` - calculate the probabilities of diseases using the symptoms layer and symptoms+biomarkers layer
 
 - [x] Implement biomarker data APIs:
 
-  - [x] GET `/api/biomarkers` - fetch metadata of biomarkers from the database
-
-  - [x] GET `/api/biomarkers/units` - fetch from the database a mapping between the biomarkers and their corresponding units
+  - [x] GET `/api/biomarkers` - fetch metadata of biomarkers from the `biomarkers` table including the name (if any), abbreviation, standard unit, and reference range of each biomarker
+  - [x] GET `/api/biomarkers/units` - fetch a mapping between the biomarker abbreviations and their corresponding units based on data in the `biomarkers`, `units`, and `biomarker_units` tables in the Postgres database
 
 - [x] Implement LLM integration APIs:
 
   - [x] POST `/api/patient/{id}/generate/groq` - generate a clinical decision support report via Groq LLM
-
   - [x] POST `/api/patient/{id}/generate/openrouter` - generate a clinical decision support report via OpenRouter LLM
 
 - [x] Implement utility APIs:
 
-  - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical)
-
-  - [x] GET `/api/diseases` - fetch a listing of all possible diseases a patient can test negative for
-
-  - [x] GET `/api/symptoms/categories-definitions` - fetch a mapping between the symptom category, associated symptoms, and their definitions
-
-  - [x] POST `/api/contact` - send support requests with sender's name and email, subject, and body to FebriLogic's support email address
+  - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical) from countries table in the database
+  - [x] GET `/api/diseases` - fetch a listing of all possible diseases a patient can test negative for from `diseases` table in the Postgres database
+  - [x] GET `/api/symptoms/categories-definitions` - fetch a mapping between the symptom category, associated symptoms, and their definitions based on the data in the `symptoms` and `symptom_categories` tables in the database
+  - [x] POST `/api/contact` - send support requests with sender's name and email address, subject, and body to FebriLogic's support email address
 
 - [x] Implement authentication APIs:
-  - [x] POST `/auth/` - register a new user
+  - [x] POST `/auth/` - register a new user by sending verification email
   - [x] POST `/auth/token` - login to the app and obtain JWT token
   - [x] POST `/auth/request-password-reset` - send password reset email
   - [x] POST `/auth/reset-password` - reset the user's password
@@ -357,33 +355,51 @@ To get a local copy up and running follow these simple example steps.
 
   - [x] cookie consent dialog
   - [x] description of what FebriLogic is
-  - [x] note indicating the foundation funding the effort
+  - [x] note indicating the project’s funding source, academic lead, and university affiliation
   - [x] supported United Nations (UN) Sustainable Development Goals (SDGs)
   - [x] disclaimer on tool usage
 
 - [x] Add Login/Register page:
 
-  - [x] form for user login/registration
+  - [x] form for user login/registration via email and password
   - [x] option to reset password after entering email
 
 - [x] Add Reset Password page
 
-- [x] Add Patient Information page – add a new patient or view existing patient info
+- [x] Add Patient Information page:
 
-- [x] Add Disease-Specific Tests page – submit patient negative test results
+  - [x] selectbox to add a new patient or select an existing patient
+  - [x] form to submit patient info with selectboxes (sex, race, and country), optional field for city, and number field for age
+  - [x] secondary reset button to clear all fields
 
-- [x] Add Symptom Checker page - submit patient symptoms
+- [x] Add Disease-Specific Tests page:
+
+  - [x] selectbox to select an existing patient
+  - [x] form containing checkboxes for diseases and submit button to add diseases the patient tested negative for
+  - [x] secondary reset button to clear all checkboxes
+
+- [x] Add Symptom Checker page
+
+  - [x] selectbox to choose patient
+  - [x] form containing checkboxes for symptoms and submit button
+  - [x] secondary reset button to clear all symptoms
 
 - [x] Add Biomarkers page – submit patient biomarkers (abbreviation, value, unit)
 
-- [x] Add Results page – select patient and view:
+  - [x] checkbox for each biomarker indicating whether it was measured
+  - [x] box for each biomarker to capture its value
+  - [x] selectbox for each biomarker to choose the unit
+  - [x] button to submit patient biomarkers
+  - [x] secondary reset button to clear untick all biomarkers
 
+- [x] Add Results page:
+
+  - [x] selectbox to select existing patient
+  - [x] submit button to calculate the disease probabilities for symptoms layer and symptoms+biomarkers layer
   - [x] ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
-
   - [x] clinical decision support report from LLM
 
 - [x] Add Contact Us page – send support emails
-
 - [x] Add Privacy Policy page – GDPR privacy policy
 
 See the [open issues](https://github.com/othneildrew/Best-README-Template/issues) for a full list of proposed features (and known issues).

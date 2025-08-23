@@ -1,13 +1,18 @@
 import requests
 import streamlit as st
 
-from config import FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT
+from config import (
+    FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT,
+    FEBRILOGIC_LOGO
+)
 
 st.set_page_config(
     page_title='Reset Password',
     page_icon=':material/lock_reset:',
     layout='wide'
 )
+
+st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
 query_params = st.query_params
 token: str | None = query_params.get('token')

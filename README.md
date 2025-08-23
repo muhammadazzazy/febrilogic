@@ -384,7 +384,7 @@ To get a local copy up and running follow these simple example steps.
   - [x] form containing checkboxes for symptoms and submit button
   - [x] secondary reset button to clear all symptoms
 
-- [x] Add Biomarkers page – submit patient biomarkers (abbreviation, value, unit)
+- [x] Add Biomarkers page:
 
   - [x] checkbox for each biomarker indicating whether it was measured
   - [x] box for each biomarker to capture its value

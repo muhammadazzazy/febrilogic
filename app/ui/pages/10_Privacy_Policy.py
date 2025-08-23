@@ -2,7 +2,20 @@ from datetime import datetime
 
 import streamlit as st
 
+from config import FEBRILOGIC_LOGO
+
+
+st.set_page_config(
+    page_title='Privacy Policy',
+    page_icon=':material/privacy_tip:',
+    layout='wide',
+    initial_sidebar_state='expanded'
+)
+
 st.title('🛡️ Privacy Policy')
+
+st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
+
 st.header(f'Effective Date: {datetime.now().date().strftime("%d-%m-%Y")}')
 st.markdown(
     """FebriLogic ("we", "our", or "us") respects your privacy and is committed to protecting your personal data and the data you enter into our application (the “App”).

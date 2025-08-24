@@ -96,6 +96,7 @@ FebriLogic is a clinical decision support tool that helps healthcare professiona
 ### Deployment
 
 - [![Render][Render]][Render-url]
+- [![Streamlit Community Cloud][Streamlit-Community-Cloud]][Streamlit-Community-Cloud-url]
 
 <p align="right">(<a href="#febrilogic">back to top</a>)</p>
 
@@ -483,3 +484,5 @@ Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/
 [Streamlit-url]: https://streamlit.io/
 [Render]: https://img.shields.io/badge/render-000000?style=for-the-badge&logo=render
 [Render-url]: https://render.com
+[Streamlit-Community-Cloud]: https://img.shields.io/badge/streamlit%20community%20cloud-ffffff?style=for-the-badge&logo=streamlit
+[Streamlit-Community-Cloud-url]: https://febrilogic.streamlit.app/

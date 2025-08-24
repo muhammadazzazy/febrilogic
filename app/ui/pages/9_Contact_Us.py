@@ -42,10 +42,10 @@ if submitted:
         missing_fields.append('Email')
     if not name.strip():
         missing_fields.append('Name')
-    if not message.strip():
-        missing_fields.append('Message')
     if not subject.strip():
         missing_fields.append('Subject')
+    if not message.strip():
+        missing_fields.append('Message')
     if missing_fields:
         columns[1].error(f'Missing fields: {", ".join(missing_fields)}')
         st.stop()

@@ -339,7 +339,7 @@ To get a local copy up and running follow these simple example steps.
 
 - [x] Implement utility APIs:
 
-  - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical) from countries table in the database
+  - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical) from `countries` table in the database
   - [x] GET `/api/diseases` - fetch a listing of all possible diseases a patient can test negative for from `diseases` table in the Postgres database
   - [x] GET `/api/symptoms/categories-definitions` - fetch a mapping between the symptom category, associated symptoms, and their definitions based on the data in the `symptoms` and `symptom_categories` tables in the database
   - [x] POST `/api/contact` - send support requests with sender's name and email address, subject, and body to FebriLogic's support email address
@@ -370,20 +370,20 @@ To get a local copy up and running follow these simple example steps.
 - [x] Add Patient Information page:
 
   - [x] selectbox to add a new patient or select an existing patient
-  - [x] form to submit patient info with selectboxes (sex, race, and country), optional field for city, and number field for age
+  - [x] form to submit patient info with selectboxes (sex, race, and country), optional text field for city, and number field for age
   - [x] secondary reset button to clear all fields
 
 - [x] Add Disease-Specific Tests page:
 
-  - [x] selectbox to select an existing patient
+  - [x] selectbox to choose a patient
   - [x] form containing checkboxes for diseases and submit button to add diseases the patient tested negative for
-  - [x] secondary reset button to clear all checkboxes
+  - [x] secondary reset button to clear disease checboxes
 
 - [x] Add Symptom Checker page
 
-  - [x] selectbox to choose patient
+  - [x] selectbox to choose a patient
   - [x] form containing checkboxes for symptoms and submit button
-  - [x] secondary reset button to clear all symptoms
+  - [x] secondary reset button to clear symptom checkboxes
 
 - [x] Add Biomarkers page:
 
@@ -391,11 +391,11 @@ To get a local copy up and running follow these simple example steps.
   - [x] box for each biomarker to capture its value
   - [x] selectbox for each biomarker to choose the unit
   - [x] button to submit patient biomarkers
-  - [x] secondary reset button to clear untick all biomarkers
+  - [x] secondary reset button to clear biomarker checkboxes
 
 - [x] Add Results page:
 
-  - [x] selectbox to select existing patient
+  - [x] selectbox to choose a patient
   - [x] submit button to calculate the disease probabilities for symptoms layer and symptoms+biomarkers layer
   - [x] ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
   - [x] clinical decision support report from LLM

@@ -365,7 +365,10 @@ To get a local copy up and running follow these simple example steps.
   - [x] form for user login/registration via email and password
   - [x] option to reset password after entering email
 
-- [x] Add Reset Password page
+- [x] Add Reset Password page:
+
+  - [x] form for resetting the password when user is locked out of their account via the password reset email and token
+  - [x] form for changing password while user is logged in
 
 - [x] Add Patient Information page:
 

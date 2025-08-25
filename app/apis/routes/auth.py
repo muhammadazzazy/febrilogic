@@ -31,6 +31,7 @@ from apis.db.database import get_db
 
 from apis.models.model import User
 from apis.models.password_reset_request import PasswordResetRequest
+from apis.models.change_password_form import ChangePasswordForm
 from apis.models.reset_password_form import ResetPasswordForm
 from apis.models.token import Token
 from apis.models.user_request import UserRequest
@@ -198,6 +199,24 @@ def reset_password(form: ResetPasswordForm, db: Session = Depends(get_db)) -> No
     except jwt.JWTError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail='Invalid token.') from exc
+
+
+@api_router.post('/change-password')
+def change_password(form: ChangePasswordForm,
+                    user: Annotated[User, Depends(get_current_user)],
+                    db: Session = Depends(get_db)) -> None:
+    """Change the password of an already logged-in user."""
+    user = db.query(User).filter(
+        User.id == user['id']
+    ).first()
+    if not bcrypt_context.verify(form.current_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Incorrect current password.'
+        )
+    user.hashed_password = bcrypt_context.hash(form.new_password)
+    db.add(user)
+    db.commit()
 
 
 def send_password_reset_email(*, email: str, token: str) -> None:

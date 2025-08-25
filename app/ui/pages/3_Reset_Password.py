@@ -22,7 +22,7 @@ token: str | None = query_params.get('token')
 controller_token: str = controller.get('token')
 controller.set('token', controller_token)
 if not token and not controller_token:
-    st.error('User not logged-in and invalid reset link.')
+    st.error('Access denied.')
     st.stop()
 
 st.title('🔓 Reset Password')

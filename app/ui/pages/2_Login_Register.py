@@ -13,14 +13,14 @@ from config import (
 
 
 st.set_page_config(
-    page_title='Login',
-    page_icon=':material/login:',
+    page_title='Login / Register',
+    page_icon=':material/person_add:',
     layout='wide',
     initial_sidebar_state='expanded'
 )
 st.logo(FEBRILOGIC_LOGO, size='large', link='https://www.febrilogic.com')
 
-st.title('🔑 Login')
+st.title('🔑 Login / Register')
 
 st.session_state.setdefault('login', False)
 st.session_state.setdefault('register', False)

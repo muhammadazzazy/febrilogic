@@ -349,10 +349,11 @@ To get a local copy up and running follow these simple example steps.
   - [x] POST `/auth/token` - login to the app and obtain JWT token
   - [x] POST `/auth/request-password-reset` - send password reset email
   - [x] POST `/auth/reset-password` - reset the user's password
+  - [x] POST `/auth/change-password` - change the password of an already logged-in user
 
 ### Streamlit Frontend
 
-- [x] Add Home page:
+- [x] Add Home page
 
   - [x] cookie consent dialog
   - [x] description of what FebriLogic is
@@ -360,33 +361,33 @@ To get a local copy up and running follow these simple example steps.
   - [x] supported United Nations (UN) Sustainable Development Goals (SDGs)
   - [x] disclaimer on tool usage
 
-- [x] Add Login/Register page:
+- [x] Add Login/Register page
 
   - [x] form for user login/registration via email and password
   - [x] option to reset password after entering email
 
-- [x] Add Reset Password page:
+- [x] Add Reset Password page
 
   - [x] form for resetting the password when user is locked out of their account via the password reset email and token
   - [x] form for changing password while user is logged in
 
-- [x] Add Patient Information page:
+- [x] Add Patient Information page
 
   - [x] selectbox to add a new patient or select an existing patient
   - [x] form to submit patient info with selectboxes (sex, race, and country), optional text field for city, and number field for age
-  - [x] secondary reset button to clear all fields
+  - [x] reset button to clear all fields
 
-- [x] Add Disease-Specific Tests page:
+- [x] Add Disease-Specific Tests page
 
   - [x] selectbox to choose a patient
   - [x] form containing checkboxes for diseases and submit button to add diseases the patient tested negative for
-  - [x] secondary reset button to clear disease checboxes
+  - [x] reset button to clear disease checkboxes
 
 - [x] Add Symptom Checker page
 
   - [x] selectbox to choose a patient
   - [x] form containing checkboxes for symptoms and submit button
-  - [x] secondary reset button to clear symptom checkboxes
+  - [x] reset button to clear symptom checkboxes
 
 - [x] Add Biomarkers page:
 
@@ -394,7 +395,7 @@ To get a local copy up and running follow these simple example steps.
   - [x] box for each biomarker to capture its value
   - [x] selectbox for each biomarker to choose the unit
   - [x] button to submit patient biomarkers
-  - [x] secondary reset button to clear biomarker checkboxes
+  - [x] reset button to clear biomarker checkboxes
 
 - [x] Add Results page:
 

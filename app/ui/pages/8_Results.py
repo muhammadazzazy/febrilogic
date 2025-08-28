@@ -40,7 +40,7 @@ if not st.session_state.get('patient_ids', []):
     st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
     time.sleep(2)
-    st.switch_page('./pages/2_Patient_Information.py')
+    st.switch_page('./pages/4_Patient_Information.py')
 
 if st.session_state.get('patient_id') == 0:
     st.error('Please select a patient to proceed.')

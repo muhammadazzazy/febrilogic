@@ -6,6 +6,7 @@ import json
 import pandas as pd
 import requests
 from fastapi import APIRouter, Depends, HTTPException
+from groq import Groq
 from jinja2 import Template
 from pandas import DataFrame
 from sqlalchemy import Numeric, cast, func, select, tuple_
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from apis.config import (
     BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
-    GROQ_API_KEY, GROQ_MODEL, GROQ_URL, GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT,
+    GROQ_API_KEY, GROQ_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
     OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
     PROMPT_TEMPLATE
@@ -37,6 +38,9 @@ from apis.tools.afi_model import (
 api_router: APIRouter = APIRouter(
     prefix='/api/patients'
 )
+
+
+groq: Groq = Groq(api_key=GROQ_API_KEY)
 
 
 @api_router.post('')
@@ -515,34 +519,23 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     """Generate an LLM response using Groq."""
     if not user:
         raise HTTPException(status_code=401, detail='Authentication failed.')
-
-    headers: dict[str, str] = {'Authorization': f'Bearer {GROQ_API_KEY}',
-                               'Content-Type': 'application/json'}
     rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
                                         disease_probabilities=disease_probabilities)
-    data: dict[str, str | list[dict[str, str]]] = {
-        'model': GROQ_MODEL,
-        'messages': [
+    response = groq.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
             {
                 'role': 'user',
                 'content': rendered_prompt
             }
         ]
-    }
-    response = requests.post(url=GROQ_URL, headers=headers,
-                             data=json.dumps(data), timeout=(GROQ_CONNECT_TIMEOUT, GROQ_READ_TIMEOUT))
-    choices: list[dict[str, Any]] = response.json().get('choices', [])
-    if not choices:
-        raise HTTPException(status_code=500,
-                            detail='No choices returned from Groq API.')
-    if 'message' not in choices[0]:
-        raise HTTPException(status_code=500,
-                            detail='No message in the response from Groq API.')
-    message: dict[str, Any] = choices[0].get('message', {})
-    if 'content' not in message:
-        raise HTTPException(status_code=500,
-                            detail='No content in the response from Groq API.')
-    content: str = message.get('content', '')
-    return {
-        'content': content
-    }
+    )
+    if hasattr(response, 'choices'):
+        if len(response.choices) > 0:
+            if hasattr(response.choices[0], 'message'):
+                if hasattr(response.choices[0].message, 'content'):
+                    return {
+                        'content': response.choices[0].message.content
+                    }
+    raise HTTPException(
+        status_code=500, detail='Invalid response from Groq API.')

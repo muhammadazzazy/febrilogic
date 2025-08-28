@@ -1,4 +1,5 @@
 """Insert, update, and retrieve patient information."""
+from decimal import Decimal
 from typing import Annotated, Any
 
 import json
@@ -353,6 +354,19 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     }
 
 
+def format_biomarkers(biomarkers: dict, db: Session = Depends(get_db)) -> list[str]:
+    """Format biomarkers for rendered prompt."""
+    formatted_biomarkers: list[str] = []
+    for abbreviation, value in biomarkers.items():
+        if isinstance(value, Decimal):
+            value = int(
+                value) if value == value.to_integral() else float(value)
+        unit: str = db.query(Biomarker.standard_unit).filter(
+            Biomarker.abbreviation == abbreviation).first()[0]
+        formatted_biomarkers.append(f'- {abbreviation}: {value} {unit}')
+    return formatted_biomarkers
+
+
 def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
     """Get the latest lab results for a patient."""
     latest_datetime = db.execute(
@@ -429,6 +443,7 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
     negative_diseases = lab_results.get('negative_diseases', [])
     symptoms = lab_results.get('symptoms', [])
     biomarkers = lab_results.get('biomarkers', {})
+    formatted_biomarkers: list[str] = format_biomarkers(biomarkers, db)
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
     top_3_diagnoses: list[tuple[str, float]] = [
@@ -440,7 +455,7 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
         'patient_info': f"Age {patient['age']}, {patient['country']}, {patient['sex']}, {patient['race']}",
         'negative_diseases': ', '.join(negative_diseases),
         'symptoms': ', '.join(symptoms),
-        'biomarkers': biomarkers,
+        'biomarkers': '\n'.join(formatted_biomarkers),
         'top_3_diagnoses': top_3_diagnoses
     }
     rendered_prompt: str = template.render(**dynamic_data)

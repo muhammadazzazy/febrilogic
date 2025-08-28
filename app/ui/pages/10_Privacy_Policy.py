@@ -55,8 +55,7 @@ We use collected information to:
 - Provide account registration, authentication, and password reset functionality.
 - Enable healthcare professionals to record patient demographics, symptoms, biomarkers, and test results.
 - Transmit patient-related data (without direct identifiers) to **Meta LLAMA LLM** via the **Groq API** for processing.
-
-Improve and secure the App.
+- Improve and secure the App.
 
 ### 5. Data Sharing and Transfers
 - **Meta LLAMA LLM via Groq API**: Patient-related data is transmitted to this third-party service for processing.

@@ -528,12 +528,13 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
             }
         ]
     )
-    if hasattr(response, 'choices'):
-        if len(response.choices) > 0:
-            if hasattr(response.choices[0], 'message'):
-                if hasattr(response.choices[0].message, 'content'):
-                    return {
-                        'content': response.choices[0].message.content
-                    }
+    choice = getattr(response, 'choices', [None])[0] if getattr(
+        response, 'choices', None) else None
+    content: str | None = getattr(getattr(choice, 'message', None),
+                                  'content', None) if choice else None
+    if content:
+        return {
+            'content': content
+        }
     raise HTTPException(
         status_code=500, detail='Invalid response from Groq API.')

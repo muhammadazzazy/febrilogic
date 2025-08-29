@@ -353,54 +353,54 @@ To get a local copy up and running follow these simple example steps.
 
 - [x] Add Home page
 
-  - [x] cookie consent dialog
-  - [x] description of what FebriLogic is
-  - [x] note indicating the project’s funding source, academic lead, and university affiliation
-  - [x] supported United Nations (UN) Sustainable Development Goals (SDGs)
-  - [x] disclaimer on tool usage
+  - [x] Cookie consent dialog
+  - [x] Description of what FebriLogic is
+  - [x] Note indicating the project’s funding source, academic lead, and university affiliation
+  - [x] Supported United Nations (UN) Sustainable Development Goals (SDGs)
+  - [x] Disclaimer on tool usage
 
 - [x] Add Login/Register page
 
-  - [x] form for user login/registration via email and password
-  - [x] option to reset password after entering email
+  - [x] Form for user login/registration via email and password
+  - [x] Option to reset password after entering email
 
 - [x] Add Reset Password page
 
-  - [x] form for resetting the password when user is locked out of their account via the password reset email and token
-  - [x] form for changing password while user is logged in
+  - [x] Form for resetting the password when user is locked out of their account via the password reset email and token
+  - [x] Form for changing password while user is logged in
 
 - [x] Add Patient Information page
 
-  - [x] selectbox to add a new patient or select an existing patient
-  - [x] form to submit patient info with selectboxes (sex, race, and country), optional text field for city, and number field for age
-  - [x] reset button to clear all fields
+  - [x] Selectbox to add a new patient or select an existing patient
+  - [x] Form to submit patient info with selectboxes (sex, race, and country), optional text field for city, and number field for age
+  - [x] Reset button to clear all fields
 
 - [x] Add Disease-Specific Tests page
 
-  - [x] selectbox to choose a patient
-  - [x] form containing checkboxes for diseases and submit button to add diseases the patient tested negative for
-  - [x] reset button to clear disease checkboxes
+  - [x] Selectbox to choose a patient
+  - [x] Form containing checkboxes for diseases and submit button to add diseases the patient tested negative for
+  - [x] Reset button to clear disease checkboxes
 
 - [x] Add Symptom Checker page
 
-  - [x] selectbox to choose a patient
-  - [x] form containing checkboxes for symptoms and submit button
-  - [x] reset button to clear symptom checkboxes
+  - [x] Selectbox to choose a patient
+  - [x] Form containing checkboxes for symptoms and submit button
+  - [x] Reset button to clear symptom checkboxes
 
-- [x] Add Biomarkers page:
+- [x] Add Biomarkers page
 
-  - [x] checkbox for each biomarker indicating whether it was measured
-  - [x] box for each biomarker to capture its value
-  - [x] selectbox for each biomarker to choose the unit
-  - [x] button to submit patient biomarkers
-  - [x] reset button to clear biomarker checkboxes
+  - [x] Checkbox for each biomarker indicating whether it was measured
+  - [x] Box for each biomarker to capture its value
+  - [x] Selectbox for each biomarker to choose the unit
+  - [x] Button to submit patient biomarkers
+  - [x] Reset button to clear biomarker checkboxes
 
-- [x] Add Results page:
+- [x] Add Results page
 
-  - [x] selectbox to choose a patient
-  - [x] submit button to calculate the disease probabilities for symptoms layer and symptoms+biomarkers layer
-  - [x] ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
-  - [x] clinical decision support report from LLM
+  - [x] Selectbox to choose a patient
+  - [x] Button to calculate the disease probabilities for symptoms layer and symptoms+biomarkers layer
+  - [x] Ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
+  - [x] Clinical decision support report from LLM
 
 - [x] Add Contact Us page – send support emails
 - [x] Add Privacy Policy page – GDPR privacy policy
@@ -452,6 +452,7 @@ Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/
 - [Pylance (VS Code Extension)](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance)
 - [autopep8 (VS Code Extension)](https://marketplace.visualstudio.com/items?itemName=ms-python.autopep8)
 - [Img Shields](https://shields.io)
+- [REST Countries](https://restcountries.com/)
 
 <p align="right">(<a href="#febrilogic">back to top</a>)</p>
 

@@ -438,7 +438,7 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 
 ## Contact
 
-Muhammad Azzazy - muhammadazzazy8@gmail.com
+Muhammad Azzazy - [muhammadazzazy8@gmail.com](mailto:muhammadazzazy8@gmail.com)
 
 Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/muhammadazzazy/febrilogic)
 
@@ -481,7 +481,7 @@ Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/
 [NumPy]: https://img.shields.io/badge/numpy-4D77CF?style=for-the-badge&logo=numpy
 [NumPy-url]: https://numpy.org/
 [Groq]: https://img.shields.io/badge/groq-F55036?style=for-the-badge&logo=groq
-[Groq-url]: https://pypi.org/project/groq/
+[Groq-url]: https://console.groq.com/docs/overview
 [Resend]: https://img.shields.io/badge/resend-000000?style=for-the-badge&logo=resend
 [Resend-url]: https://resend.com
 [Streamlit]: https://img.shields.io/badge/streamlit-FFFFFF?style=for-the-badge&logo=streamlit

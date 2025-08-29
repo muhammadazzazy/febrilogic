@@ -88,6 +88,7 @@ FebriLogic is a clinical decision support tool that helps healthcare professiona
 - [![Pydantic][Pydantic]][Pydantic-url]
 - [![Pandas][Pandas]][Pandas-url]
 - [![NumPy][NumPy]][NumPy-url]
+- [![Groq][Groq]][groq-url]
 - [![Resend][Resend]][Resend-url]
 - [![Streamlit][Streamlit]][Streamlit-url]
 
@@ -193,9 +194,6 @@ To get a local copy up and running follow these simple example steps.
 
    # Optional. Defaults to llama-3.1-8b-instant.
    GROQ_MODEL="llama-3.1-8b-instant"
-
-   # Optional. Defaults to https://api.groq.com/openai/v1/chat/completions.
-   GROQ_URL="https://api.groq.com/openai/v1/chat/completions"
 
    # Required for generating LLM responses.
    OPENROUTER_API_KEY=""
@@ -482,6 +480,8 @@ Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/
 [Pandas-url]: https://pandas.pydata.org/
 [NumPy]: https://img.shields.io/badge/numpy-4D77CF?style=for-the-badge&logo=numpy
 [NumPy-url]: https://numpy.org/
+[Groq]: https://img.shields.io/badge/groq-F55036?style=for-the-badge&logo=groq
+[Groq-url]: https://pypi.org/project/groq/
 [Resend]: https://img.shields.io/badge/resend-000000?style=for-the-badge&logo=resend
 [Resend-url]: https://resend.com
 [Streamlit]: https://img.shields.io/badge/streamlit-FFFFFF?style=for-the-badge&logo=streamlit

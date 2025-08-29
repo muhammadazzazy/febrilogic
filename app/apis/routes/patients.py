@@ -40,9 +40,6 @@ api_router: APIRouter = APIRouter(
 )
 
 
-groq: Groq = Groq(api_key=GROQ_API_KEY)
-
-
 @api_router.post('')
 def upload_patient_data(patient_request: PatientRequest,
                         user: Annotated[dict, Depends(get_current_user)],
@@ -521,7 +518,8 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
         raise HTTPException(status_code=401, detail='Authentication failed.')
     rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
                                         disease_probabilities=disease_probabilities)
-    response = groq.chat.completions.create(
+    client: Groq = Groq(api_key=GROQ_API_KEY)
+    response = client.chat.completions.create(
         model=GROQ_MODEL,
         messages=[
             {

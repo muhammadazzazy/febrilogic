@@ -71,7 +71,7 @@ if st.session_state.get('login', False) or st.session_state.get('register', Fals
         st.stop()
 
 if st.session_state.get('login', False) or st.session_state.get('register', False) \
-        or st.session_state.get('reset', False):
+        or st.session_state.get('reset_password', False):
     if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', st.session_state.get('email', '')):
         center_col.error('Please enter a valid email address.')
         st.stop()

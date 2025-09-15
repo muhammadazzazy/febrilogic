@@ -36,7 +36,7 @@ else:
     st.error('Please log in to access the biomarkers.')
     st.stop()
 
-if not st.session_state.get('patient_ids', []):
+if not st.session_state.get('patient_numbers', []):
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
@@ -44,7 +44,7 @@ if not st.session_state.get('patient_ids', []):
     st.switch_page('./pages/4_Patient_Information.py')
 
 
-if st.session_state.get('patient_id') == 0:
+if st.session_state.get('patient_number') == 0:
     st.error('Please select a patient to proceed.')
     st.stop()
 
@@ -100,11 +100,11 @@ biomarker_std_units: dict[str, str] = {
 cols = st.columns(5, gap='large', border=False)
 
 
-patient_id: int = st.session_state.get('patient_id')
-index: int = st.session_state.get('patient_ids', []).index(patient_id)
+patient_number: int = st.session_state.get('patient_number')
+index: int = st.session_state.get('patient_numbers', []).index(patient_number)
 cols[0].selectbox(label='Select patient',
                   key='biomarkers_selectbox',
-                  options=st.session_state.get('patient_ids'),
+                  options=st.session_state.get('patient_numbers'),
                   index=index)
 
 

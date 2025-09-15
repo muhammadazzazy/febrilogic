@@ -37,7 +37,6 @@ st.title('ℹ️ Patient Information')
 cols = st.columns(3, gap='small', border=False)
 cols[0].subheader(f"**Date:** {datetime.now().strftime('%d-%m-%Y')}")
 
-st.session_state.setdefault('patient_ids', [])
 st.session_state.setdefault('patients_loaded', False)
 st.session_state.setdefault('countries_loaded', False)
 
@@ -99,25 +98,24 @@ PLACEHOLDER: Final[str] = 'Please select'
 
 cols = st.columns(6, gap='medium', border=False)
 
-patient_ids: list[int] = [patient['id']
-                          for patient in
-                          st.session_state.patients]
+patient_numbers: list[int] = [patient['patient_number']
+                              for patient in st.session_state.patients]
 
-st.session_state.patient_ids = patient_ids
+st.session_state.patient_numbers = patient_numbers
 
-st.session_state.patient_id = cols[0].selectbox(label='Select a patient',
-                                                key='patient_info_selectbox',
-                                                options=['New patient'] + patient_ids)
+st.session_state.patient_number = cols[0].selectbox(label='Select a patient',
+                                                    key='patient_info_selectbox',
+                                                    options=['New patient'] + patient_numbers)
 
-if st.session_state.patient_id == 'New patient':
-    st.session_state.patient_id = 0
+if st.session_state.patient_number == 'New patient':
+    st.session_state.patient_number = 0
 
-patient_id = st.session_state.patient_id
+patient_number = st.session_state.patient_number
 patients = st.session_state.patients
-last_patient_id = st.session_state.get('last_patient_id', None)
-if patient_id != last_patient_id:
-    st.session_state.last_patient_id = patient_id
-    if patient_id == 0:
+last_patient_number = st.session_state.get('last_patient_number', None)
+if patient_number != last_patient_number:
+    st.session_state.last_patient_number = patient_number
+    if patient_number == 0:
         st.session_state.patient_age = 0
         st.session_state.patient_country = PLACEHOLDER
         st.session_state.patient_city = ''
@@ -125,9 +123,8 @@ if patient_id != last_patient_id:
         st.session_state.patient_race = PLACEHOLDER
     else:
         selected = next(
-            (patient for patient in patients if patient['id'] ==
-             int(patient_id)), None
-        )
+            (patient for patient in patients
+             if patient['patient_number'] == patient_number), None)
         if selected:
             st.session_state.patient_country = st.session_state.countries[selected.get(
                 'country_id')-1]['common_name']
@@ -203,7 +200,6 @@ if submitted:
 
 
 patients: list[dict[str, str | int]] = st.session_state.get('patients', [])
-patient_id: int = st.session_state.get('patient_id')
 
 country_id: int = 0
 countries = st.session_state.get('countries', [])
@@ -247,7 +243,8 @@ if st.session_state.get('ready', False):
     }
     route: str = f'{FAST_API_BASE_URL}/api/patients'
     current_patient = next(
-        (patient for patient in patients if patient['id'] == patient_id), None)
+        (patient for patient in patients if patient['patient_number'] == patient_number), None)
+    patient_id: int = current_patient['id'] if current_patient else 0
     if current_patient:
         if int(current_patient['age']) != int(patient_age) \
                 or current_patient['city'] != patient_city \
@@ -261,9 +258,12 @@ if st.session_state.get('ready', False):
                        icon='⚠️')
             time.sleep(1.5)
             st.switch_page('./pages/5_Disease-Specific_Tests.py')
+    else:
+        patient_number = len(st.session_state.patient_numbers) + 1
+        st.session_state.patient_number = patient_number
     patient_id: int = submit_patient_info(route, body)
     st.session_state.patient_id = patient_id
-    st.session_state.patient_ids.append(patient_id)
+    st.session_state.patient_numbers.append(patient_number)
     st.success('Patient information submitted successfully.', icon='✅')
     time.sleep(1.5)
     st.switch_page('./pages/5_Disease-Specific_Tests.py')

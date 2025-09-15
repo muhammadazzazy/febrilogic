@@ -30,14 +30,14 @@ else:
     st.error('Please log in to access the disease-specific tests.')
     st.stop()
 
-if not st.session_state.get('patient_ids', []):
+if not st.session_state.get('patient_numbers', []):
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
     st.error('No patient information available.')
     time.sleep(2)
     st.switch_page('./pages/4_Patient_Information.py')
 
-if st.session_state.get('patient_id') == 0:
+if st.session_state.get('patient_number') == 0:
     st.error('Please select a patient to proceed.')
     st.stop()
 
@@ -53,6 +53,7 @@ st.markdown('##### *Screening tests are not considered.*')
 
 @st.cache_data(show_spinner=False, ttl=60 * 60)
 def fetch_diseases():
+    """Fetch disease information from the FastAPI server."""
     try:
         with st.spinner('Loading disease information...'):
             response = requests.get(url=f'{FAST_API_BASE_URL}/api/diseases',
@@ -81,14 +82,14 @@ def reset_button() -> None:
         st.session_state[f'{disease}_checkbox'] = False
 
 
-patient_id: int = st.session_state.get('patient_id')
-index: int = st.session_state.get('patient_ids', []).index(patient_id)
+patient_number: int = st.session_state.get('patient_number')
+index: int = st.session_state.get('patient_numbers', []).index(patient_number)
 with st.container(border=False):
     cols = st.columns(5)
     cols[0].selectbox(
         label='Select a patient',
         key='disease_specific_tests_selectbox',
-        options=st.session_state.get('patient_ids', []),
+        options=st.session_state.get('patient_numbers', []),
         index=index
     )
     cols[4].button(

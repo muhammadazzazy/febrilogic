@@ -35,33 +35,35 @@ else:
     st.error('Please log in to access the results.')
     st.stop()
 
-if not st.session_state.get('patient_ids', []):
+if not st.session_state.get('patient_numbers', []):
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
     time.sleep(2)
     st.switch_page('./pages/4_Patient_Information.py')
 
-if st.session_state.get('patient_id') == 0:
+if st.session_state.get('patient_number') == 0:
     st.error('Please select a patient to proceed.')
     st.stop()
 
 st.title('📊 Results')
 
 
-patient_id: int = st.session_state.get('patient_id')
-index: int = st.session_state.get('patient_ids', []).index(patient_id)
+patient_number: int = st.session_state.get('patient_number')
+index: int = st.session_state.get('patient_numbers', []).index(patient_number)
 
 cols = st.columns(5, gap='medium')
-patient_id = cols[0].selectbox(label='Select a patient',
-                               key='results_selectbox',
-                               options=st.session_state.get('patient_ids', []),
-                               index=index)
+patient_number = cols[0].selectbox(label='Select a patient',
+                                   key='results_selectbox',
+                                   options=st.session_state.get(
+                                       'patient_numbers', []),
+                                   index=index)
 
 submitted = cols[4].button(label='Submit',
                            icon='📤',
                            use_container_width=True)
 
+patient_id = st.session_state.get('patient_id')
 if submitted:
     url: str = f'{FAST_API_BASE_URL}/api/patients/{patient_id}/calculate'
     try:
@@ -72,30 +74,43 @@ if submitted:
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
         symptom_probabilities = response.json().get('symptom_probabilities', [])
+        symp_prob: dict[str, float] = {}
         for i, symptom_probability in enumerate(symptom_probabilities):
             symptom_probabilities[i][0] = symptom_probability[0].title()
+            symptom_probabilities[i][0] = symptom_probabilities[i][0].replace('Non-Severe', '').replace(
+                'Severe', '')
+            symp_prob[symptom_probability[0]] = symptom_probability[1]
 
         biomarker_probabilities = response.json().get(
             'symptom_biomarker_probabilities', [])
+        biomark_prob: dict[str, float] = {}
         for i, biomarker_probability in enumerate(biomarker_probabilities):
             biomarker_probabilities[i][0] = biomarker_probability[0].title()
+            biomarker_probabilities[i][0] = biomarker_probabilities[i][0].replace(
+                'Non-Severe', '').replace(
+                'Severe', '')
+            biomark_prob[biomarker_probability[0]] = biomarker_probability[1]
+
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()
 
 if submitted:
-    symptom_df: DataFrame = DataFrame(symptom_probabilities, columns=[
+    symptom_df: DataFrame = DataFrame(symp_prob.items(), columns=[
         'Disease', 'Percentage (%)'])
     symptom_df.sort_values(
         'Percentage (%)', ascending=False, inplace=True)
     symptom_df.index = range(1, len(symptom_df) + 1)
-    combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
+    symptom_df = symptom_df.head(3)
+    combined_df: DataFrame = DataFrame(biomark_prob.items(), columns=[
         'Disease', 'Percentage (%)'])
     combined_df: DataFrame = combined_df.sort_values(
         'Percentage (%)', ascending=False)
     combined_df.index = range(1, len(combined_df) + 1)
+    combined_df = combined_df.head(3)
     with st.expander('Disease probabilities', expanded=True, icon='📈'):
-        styled_symptom_df: DataFrame = symptom_df.style.format({"Percentage (%)": "{:.2%}"}).background_gradient(
+        styled_symptom_df: DataFrame = symptom_df.style.format(
+            {"Percentage (%)": "{:.2%}"}).background_gradient(
             subset=['Percentage (%)'], cmap='Reds')
         cols = st.columns(2, gap='medium', border=True)
         cols[0].subheader('After Symptoms')

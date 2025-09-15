@@ -35,14 +35,14 @@ else:
     st.error('Please log in to access the symptom checker.')
     st.stop()
 
-if not st.session_state.get('patient_ids', []):
+if not st.session_state.get('patient_numbers', []):
     st.session_state.diseases_loaded = False
     st.session_state.diseases = []
     st.error('No patients available. Please add a patient first.')
     time.sleep(2)
     st.switch_page('./pages/4_Patient_Information.py')
 
-if st.session_state.get('patient_id') == 0:
+if st.session_state.get('patient_number') == 0:
     st.error('Please select a patient to proceed.')
     st.stop()
 
@@ -52,19 +52,20 @@ st.title('🩺 Symptom Checker')
 cols = st.columns(5, gap='large', border=False)
 
 
-patient_id: int = st.session_state.get('patient_id')
-index: int = st.session_state.get('patient_ids', []).index(patient_id)
+patient_number: int = st.session_state.get('patient_number')
+index: int = st.session_state.get('patient_numbers', []).index(patient_number)
 
-st.session_state.patient_id = int(cols[0].selectbox(
+st.session_state.patient_number = int(cols[0].selectbox(
     label='Select a patient',
     key='symptom_checker_selectbox',
-    options=st.session_state.get('patient_ids'),
+    options=st.session_state.get('patient_numbers', []),
     index=index
 ))
 
 
 @st.cache_data(show_spinner=False, ttl=60 * 60)
 def fetch_symptoms():
+    """Fetch symptom metadata from the FastAPI server."""
     try:
         with st.spinner('Loading symptom metadata...', show_time=True):
             response = requests.get(headers={'Authorization': f'Bearer {token}'},

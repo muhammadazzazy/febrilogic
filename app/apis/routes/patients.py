@@ -82,11 +82,22 @@ def get_patient_info(user: Annotated[dict, Depends(get_current_user)],
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
-    user_patients: list[Patient] = db.query(
-        Patient).filter(Patient.user_id == user['id']).all()
+    patient_number = func.row_number().over(
+        partition_by=Patient.user_id,
+        order_by=Patient.id
+    ).label('patient_number')
+
+    user_patients = (
+        db.query(Patient, patient_number)
+        .filter(Patient.user_id == user['id'])
+        .all()
+    )
+
     patients: list[dict[str, Any]] = []
-    for patient in user_patients:
+
+    for patient, number in user_patients:
         patients.append({
+            'patient_number': number,
             'age': patient.age,
             'city': patient.city,
             'country_id': patient.country_id,

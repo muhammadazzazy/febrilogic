@@ -77,20 +77,15 @@ if submitted:
         symp_prob: dict[str, float] = {}
         for i, symptom_probability in enumerate(symptom_probabilities):
             symptom_probabilities[i][0] = symptom_probability[0].title()
-            symptom_probabilities[i][0] = symptom_probabilities[i][0].replace('Non-Severe', '').replace(
+            symptom_probabilities[i][0] = symptom_probabilities[i][0].replace(
+                'Non-Severe', '').replace(
                 'Severe', '')
             symp_prob[symptom_probability[0]] = symptom_probability[1]
 
         biomarker_probabilities = response.json().get(
             'symptom_biomarker_probabilities', [])
-        biomark_prob: dict[str, float] = {}
         for i, biomarker_probability in enumerate(biomarker_probabilities):
             biomarker_probabilities[i][0] = biomarker_probability[0].title()
-            biomarker_probabilities[i][0] = biomarker_probabilities[i][0].replace(
-                'Non-Severe', '').replace(
-                'Severe', '')
-            biomark_prob[biomarker_probability[0]] = biomarker_probability[1]
-
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()
@@ -102,7 +97,7 @@ if submitted:
         'Percentage (%)', ascending=False, inplace=True)
     symptom_df.index = range(1, len(symptom_df) + 1)
     symptom_df = symptom_df.head(3)
-    combined_df: DataFrame = DataFrame(biomark_prob.items(), columns=[
+    combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
         'Disease', 'Percentage (%)'])
     combined_df: DataFrame = combined_df.sort_values(
         'Percentage (%)', ascending=False)

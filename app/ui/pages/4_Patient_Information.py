@@ -269,7 +269,9 @@ if st.session_state.get('ready', False):
             st.session_state.patient_numbers) + 1
     patient_id: int = submit_patient_info(route, body)
     st.session_state.patient_id = patient_id
-    st.session_state.patient_numbers.append(st.session_state.patient_number)
+    if not st.session_state.patient_number in st.session_state.patient_numbers:
+        st.session_state.patient_numbers.append(
+            st.session_state.patient_number)
     st.success('Patient information submitted successfully.', icon='✅')
     time.sleep(1.5)
     st.switch_page('./pages/5_Disease-Specific_Tests.py')

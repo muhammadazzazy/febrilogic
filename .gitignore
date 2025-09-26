@@ -211,4 +211,3 @@ assets/private
 scripts/
 .env.local
 app/ui/.streamlit/secrets.toml
-README.pdf

@@ -1,6 +1,7 @@
 """Encapsulate the database models for the FebriLogic backend."""
 from typing import List
 
+import pandas as pd
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -16,6 +17,14 @@ class Biomarker(Base):
     name = Column(String, nullable=True, unique=True)
     standard_unit = Column(String, nullable=False, index=True)
     reference_range = Column(String, nullable=False)
+
+
+class BiomarkerStats:
+    """Encapsulate biomarker statistics data."""
+
+    def __init__(self, path: str) -> None:
+        self.df = pd.read_csv(path)
+        self.df['disease'] = self.df['disease'].astype(str).str.strip()
 
 
 class Country(Base):

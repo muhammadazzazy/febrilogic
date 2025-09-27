@@ -19,14 +19,6 @@ class Biomarker(Base):
     reference_range = Column(String, nullable=False)
 
 
-class BiomarkerStats:
-    """Encapsulate biomarker statistics data."""
-
-    def __init__(self, path: str) -> None:
-        self.df = pd.read_csv(path)
-        self.df['disease'] = self.df['disease'].astype(str).str.strip()
-
-
 class Country(Base):
     """Store country information in the database."""
     __tablename__ = 'countries'

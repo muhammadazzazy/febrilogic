@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
+from apis.config import SYMPTOM_WEIGHTS_FILE
+
 
 def softmax(x: list[float]) -> list[float]:
     """Return list of probabilities from a list of scores using softmax."""
@@ -25,12 +27,12 @@ def calculate_disease_scores(*, diseases: dict[str, dict[str, float]], symptoms:
     return disease_scores
 
 
-def load_disease_data(*, filepath: str, negative_diseases: list[str]) \
+def load_disease_data(negative_diseases: list[str]) \
         -> tuple[dict[str, dict[str, float]], list[str]]:
     """Load disease and symptom data from a CSV file."""
     diseases: dict[str, dict[str, float]] = {}
     symptoms: list[str] = []
-    with open(filepath, mode='r', encoding='utf-8') as file:
+    with open(SYMPTOM_WEIGHTS_FILE, mode='r', encoding='utf-8') as file:
         reader = csv.DictReader(file)
         for row in reader:
             disease_name = row['disease'].strip().title()

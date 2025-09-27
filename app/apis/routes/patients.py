@@ -1,6 +1,5 @@
 """Insert, update, and retrieve patient information."""
 from decimal import Decimal
-from functools import lru_cache
 from typing import Annotated, Any
 
 import json
@@ -13,7 +12,6 @@ from sqlalchemy import Numeric, cast, func, select, tuple_
 from sqlalchemy.orm import Session
 
 from apis.config import (
-    BIOMARKER_STATS_FILE, SYMPTOM_WEIGHTS_FILE,
     GROQ_API_KEY, GROQ_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
     OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
@@ -21,7 +19,7 @@ from apis.config import (
 )
 from apis.db.database import get_db
 from apis.models.model import (
-    Biomarker, BiomarkerStats, Country, Disease, Patient, Symptom, Unit,
+    Biomarker, Country, Disease, Patient, Symptom, Unit,
     biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
 from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
@@ -29,6 +27,7 @@ from apis.models.patient_request import PatientRequest
 from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
+from apis.services.biomarkers import get_biomarker_stats
 from apis.tools.afi_model import (
     calculate_disease_scores, softmax, load_disease_data,
     expand_diseases_for_severity, update_with_all_biomarkers
@@ -40,17 +39,11 @@ api_router: APIRouter = APIRouter(
 )
 
 
-@lru_cache()
-def get_biomarker_stats() -> BiomarkerStats:
-    """Load biomarker statistics from CSV file with caching."""
-    return BiomarkerStats(BIOMARKER_STATS_FILE)
-
-
 @api_router.post('')
 def upload_patient_data(patient_request: PatientRequest,
                         user: Annotated[dict, Depends(get_current_user)],
                         db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Upload patient personal information to the database."""
+    """Upload patient information to the database."""
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed.')
@@ -153,7 +146,7 @@ def upload_patient_negative_diseases(
     user: Annotated[dict, Depends(get_current_user)],
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
-    """Add negative disease for a patient."""
+    """Add diseases that the patient tested negative for."""
     if not user:
         raise HTTPException(status_code=401, detail="Authentication failed.")
 
@@ -279,7 +272,7 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
 @api_router.get('/{patient_id}/calculate')
 def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
               db: Session = Depends(get_db),
-              biomarker_stats: BiomarkerStats = Depends(get_biomarker_stats)) -> dict[str, Any]:
+              biomarker_df: DataFrame = Depends(get_biomarker_stats)) -> dict[str, Any]:
     """Calculate disease probabilities based on patient symptoms and biomarkers."""
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication failed.')
@@ -306,11 +299,9 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     ]
     print(f'Latest negative diseases: {negative_diseases}')
 
-    diseases, symptoms = load_disease_data(
-        filepath=SYMPTOM_WEIGHTS_FILE, negative_diseases=negative_diseases)
+    diseases, symptoms = load_disease_data(negative_diseases)
 
     print(f'Diseases loaded: {list(diseases.keys())}')
-    biomarker_df: DataFrame = biomarker_stats.df
     latest_datetime = db.execute(
         select(patient_symptoms.c.created_at)
         .where(patient_symptoms.c.patient_id == patient_id)

@@ -6,19 +6,18 @@ import uvicorn
 from fastapi import FastAPI
 
 from apis.routes import auth, biomarkers, contact, countries, diseases, patients, symptoms
-
 from apis.config import (
     FAST_API_HOST, FAST_API_PORT
 )
-
-from apis.db.database import engine
-from apis.db.database import Base
+from apis.db.database import Base, engine
+from apis.services.biomarkers import get_biomarker_stats
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     """Initialize the FastAPI application and set up the database."""
     Base.metadata.create_all(bind=engine)
+    get_biomarker_stats()
     yield
 
 api = FastAPI(lifespan=lifespan)

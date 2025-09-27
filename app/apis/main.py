@@ -11,6 +11,7 @@ from apis.config import (
 )
 from apis.db.database import Base, engine
 from apis.services.biomarkers import get_biomarker_stats
+from apis.services.countries import get_cached_countries
 from apis.services.diseases import get_diseases
 from apis.services.symptoms import get_symptom_definitions
 
@@ -22,6 +23,7 @@ async def lifespan(_app: FastAPI):
     get_biomarker_stats()
     get_diseases()
     get_symptom_definitions()
+    get_cached_countries()
     yield
 
 api = FastAPI(lifespan=lifespan)

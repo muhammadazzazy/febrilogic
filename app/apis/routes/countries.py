@@ -1,5 +1,5 @@
 """"Fetch and return a list of countries from a JSON file."""
-from typing import Annotated, Any
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 

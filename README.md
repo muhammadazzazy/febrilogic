@@ -389,6 +389,7 @@ To get a local copy up and running follow these simple example steps.
 
 - [x] Add Biomarkers page
 
+  - [x] Selectbox to choose a patient
   - [x] Checkbox for each biomarker indicating whether it was measured
   - [x] Box for each biomarker to capture its value
   - [x] Selectbox for each biomarker to choose the unit

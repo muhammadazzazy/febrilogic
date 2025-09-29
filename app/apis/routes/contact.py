@@ -41,5 +41,5 @@ def contact(contact_request: ContactRequest) -> dict[str, str]:
             }
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail='Failed to send contact request email after 3 attempts.'
+        detail='Failed to send contact request email after 3 attempts'
     )

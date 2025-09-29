@@ -19,7 +19,7 @@ def get_countries(
     """Fetch countries from the database."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     return {
         'countries': get_cached_countries()
     }

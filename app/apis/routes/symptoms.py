@@ -17,7 +17,7 @@ def get_definitions(user: Annotated[dict, Depends(get_current_user)]) -> dict[st
     """Fetch symptom definitions from the database."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     return {
         'category_symptom_definition': get_symptom_definitions()
     }

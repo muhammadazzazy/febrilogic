@@ -17,7 +17,7 @@ def get_patient_negative_diseases(
         user: Annotated[dict, Depends(get_current_user)]) -> dict[str, list[str]]:
     """Get diseases stored in the database."""
     if user is None:
-        raise HTTPException(status_code=401, detail="Authentication failed.")
+        raise HTTPException(status_code=401, detail="Authentication failed")
     return {
         'diseases': get_diseases()
     }

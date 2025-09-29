@@ -46,7 +46,7 @@ def upload_patient_data(patient_request: PatientRequest,
     """Upload patient information to the database."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     patient_ids: list[int | None] = []
     patient_ids.append(
         db.query(Patient.id).order_by(Patient.id.desc()).limit(1).scalar()
@@ -80,7 +80,7 @@ def get_patient_info(user: Annotated[dict, Depends(get_current_user)],
     """Get patient information based on the authenticated user."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     patient_number = func.row_number().over(
         partition_by=Patient.user_id,
         order_by=Patient.id
@@ -117,12 +117,12 @@ def update_patient_info(patient_id: int,
     """Update patient information in the database."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient.')
+                            detail='Not enough permissions to update this patient')
     patient = db.query(Patient).filter(
         Patient.id == patient_id,
         Patient.user_id == user['id']
@@ -148,13 +148,13 @@ def upload_patient_negative_diseases(
 ) -> dict[str, Any]:
     """Add diseases that the patient tested negative for."""
     if not user:
-        raise HTTPException(status_code=401, detail="Authentication failed.")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
     patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient.')
+                            detail='Not enough permissions to update this patient')
     disease_ids: list[int] = db.scalars(
         select(Disease.id).where(Disease.name.in_(request.negative_diseases))).all()
     data: list[dict[str, Any]] = []
@@ -186,13 +186,13 @@ def upload_patient_biomarkers(
     """Upload patient biomarkers to the database."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
 
     patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient.')
+                            detail='Not enough permissions to update this patient')
 
     biomarker_value_unit: dict[str, tuple[float, str]
                                ] = request.biomarker_value_unit
@@ -239,12 +239,12 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
     """Upload patient symptoms to the database."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient.')
+                            detail='Not enough permissions to update this patient')
     symptom_names: list[str] = symptom_request.symptom_names
     symptoms: list[int] = db.query(Symptom.id).filter(
         Symptom.name.in_(symptom_names)
@@ -275,13 +275,13 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
               biomarker_df: DataFrame = Depends(get_biomarker_stats)) -> dict[str, Any]:
     """Calculate disease probabilities based on patient symptoms and biomarkers."""
     if user is None:
-        raise HTTPException(status_code=401, detail='Authentication failed.')
+        raise HTTPException(status_code=401, detail='Authentication failed')
 
     patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to access this patient.')
+                            detail='Not enough permissions to access this patient')
 
     latest_datetime = db.execute(
         select(patient_negative_diseases.c.created_at)
@@ -478,7 +478,7 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
                         db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response based on calculated disease probabilities."""
     if not user:
-        raise HTTPException(status_code=401, detail='Authentication failed.')
+        raise HTTPException(status_code=401, detail='Authentication failed')
 
     headers: dict[str, str] = {
         'Authorization': f'Bearer {OPENROUTER_API_KEY}',
@@ -503,14 +503,14 @@ def generate_openrouter(patient_id: int, disease_probabilities: dict,
     choices: list[dict[str, Any]] = response.json().get('choices', [])
     if not choices:
         raise HTTPException(status_code=500,
-                            detail='No choices returned from OpenRouter API.')
+                            detail='No choices returned from OpenRouter API')
     if 'message' not in choices[0]:
         raise HTTPException(status_code=500,
-                            detail='No message in the response from OpenRouter API.')
+                            detail='No message in the response from OpenRouter API')
     message: dict[str, Any] = choices[0].get('message', {})
     if 'content' not in message:
         raise HTTPException(status_code=500,
-                            detail='No content in the response from OpenRouter API.')
+                            detail='No content in the response from OpenRouter API')
     content = message.get('content', '')
     return {
         'content': content
@@ -523,7 +523,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
                   db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response using Groq."""
     if not user:
-        raise HTTPException(status_code=401, detail='Authentication failed.')
+        raise HTTPException(status_code=401, detail='Authentication failed')
     rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
                                         disease_probabilities=disease_probabilities)
     client: Groq = Groq(api_key=GROQ_API_KEY)
@@ -545,4 +545,4 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
             'content': content
         }
     raise HTTPException(
-        status_code=500, detail='Invalid response from Groq API.')
+        status_code=500, detail='Invalid response from Groq API')

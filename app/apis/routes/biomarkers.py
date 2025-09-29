@@ -18,7 +18,7 @@ def get_biomarkers(
     """Fetch cached biomarkers."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     return {
         'biomarkers': fetch_biomarkers()
     }
@@ -31,7 +31,7 @@ def get_biomarker_units(
     """Fetch cached biomarker units."""
     if user is None:
         raise HTTPException(status_code=401,
-                            detail='Authentication failed.')
+                            detail='Authentication failed')
     return {
         'biomarker_units': fetch_biomarker_units()
     }

@@ -98,13 +98,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         if email is None or user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Could not validate user.',
+                detail='Could not validate user',
             )
         return {'email': email, 'id': user_id}
     except JWTError as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Could not validate user.',
+            detail='Could not validate user',
         ) from e
 
 
@@ -118,7 +118,7 @@ async def create_user(user_request: UserRequest,
     if existing_user and existing_user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'User with email {user_request.email} already exists.'
+            detail=f'User with email {user_request.email} already exists'
         )
     if not existing_user:
         verification_code: str = str(uuid4())
@@ -150,7 +150,7 @@ def verify_user(verification_code: str, db: Session = Depends(get_db)) -> dict[s
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found.'
+            detail='User not found'
         )
     user.is_verified = True
     user.verification_code = None
@@ -174,7 +174,7 @@ def request_password_reset(request: PasswordResetRequest,
     else:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='User not found.'
+            detail='User not found'
         )
 
 
@@ -187,7 +187,7 @@ def reset_password(form: ResetPasswordForm, db: Session = Depends(get_db)) -> No
         if email is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Invalid token.'
+                detail='Invalid token'
             )
         db.query(User).filter(User.email == email).update(
             {'hashed_password': bcrypt_context.hash(form.new_password)}
@@ -195,10 +195,10 @@ def reset_password(form: ResetPasswordForm, db: Session = Depends(get_db)) -> No
         db.commit()
     except jwt.ExpiredSignatureError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Token has expired.') from exc
+                            detail='Token has expired') from exc
     except jwt.JWTError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail='Invalid token.') from exc
+                            detail='Invalid token') from exc
 
 
 @api_router.post('/change-password')
@@ -212,7 +212,7 @@ def change_password(form: ChangePasswordForm,
     if not bcrypt_context.verify(form.current_password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Incorrect current password.'
+            detail='Incorrect current password'
         )
     user.hashed_password = bcrypt_context.hash(form.new_password)
     db.add(user)
@@ -241,7 +241,7 @@ def send_password_reset_email(*, email: str, token: str) -> None:
             }
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f'Failed to send password reset email after {RESEND_MAX_RETRIES} attempts.'
+        detail=f'Failed to send password reset email after {RESEND_MAX_RETRIES} attempts'
     )
 
 
@@ -269,5 +269,5 @@ def send_verification_email(*, to_email: str, verification_code: str) -> None:
             }
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=f'Failed to send verification email to {to_email} after {RESEND_MAX_RETRIES} attempts.'
+        detail=f'Failed to send verification email to {to_email} after {RESEND_MAX_RETRIES} attempts'
     )

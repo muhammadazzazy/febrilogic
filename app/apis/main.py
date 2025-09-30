@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from apis.routes import auth, biomarkers, contact, countries, diseases, patients, symptoms
 from apis.config import (
-    FAST_API_HOST, FAST_API_PORT
+    FAST_API_HOST, FAST_API_PORT, STREAMLIT_BASE_URL
 )
 from apis.db.database import Base, engine
 from apis.services.biomarkers import fetch_biomarkers, fetch_biomarker_units, get_biomarker_stats
@@ -29,6 +30,13 @@ async def lifespan(_app: FastAPI):
     yield
 
 api = FastAPI(lifespan=lifespan)
+
+
+@api.get('/')
+def index() -> RedirectResponse:
+    """Display the home page for the FebriLogic API."""
+    return RedirectResponse(url=STREAMLIT_BASE_URL)
+
 
 api.include_router(auth.api_router)
 api.include_router(biomarkers.api_router)

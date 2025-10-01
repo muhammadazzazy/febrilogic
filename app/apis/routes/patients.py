@@ -15,11 +15,11 @@ from apis.config import (
     GROQ_API_KEY, GROQ_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
     OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
-    PROMPT_TEMPLATE
+    PROMPT_TEMPLATE, STREAMLIT_BASE_URL
 )
 from apis.db.database import get_db
 from apis.models.model import (
-    Biomarker, Country, Disease, Patient, Symptom, Unit,
+    Biomarker, Disease, Patient, Symptom, Unit,
     biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
 from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
@@ -27,12 +27,12 @@ from apis.models.patient_request import PatientRequest
 from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
-from apis.services.biomarkers import fetch_biomarker_stats
+from apis.services.biomarkers import fetch_biomarker_stats, fetch_biomarker_units
+from apis.services.countries import fetch_countries
 from apis.tools.afi_model import (
     calculate_disease_scores, softmax, load_disease_data,
     expand_diseases_for_severity, update_with_all_biomarkers
 )
-
 
 api_router: APIRouter = APIRouter(
     prefix='/api/patients'
@@ -363,15 +363,14 @@ def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
     }
 
 
-def format_biomarkers(biomarkers: dict, db: Session = Depends(get_db)) -> list[str]:
+def format_biomarkers(biomarkers: dict) -> list[str]:
     """Format biomarkers for rendered prompt."""
     formatted_biomarkers: list[str] = []
     for abbreviation, value in biomarkers.items():
         if isinstance(value, Decimal):
             value = int(
                 value) if value == value.to_integral() else float(value)
-        unit: str = db.query(Biomarker.standard_unit).filter(
-            Biomarker.abbreviation == abbreviation).first()[0]
+        unit: str = fetch_biomarker_units().get(abbreviation, [''])[0]
         formatted_biomarkers.append(f'- {abbreviation}: {value} {unit}')
     return formatted_biomarkers
 
@@ -422,23 +421,19 @@ def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> di
     }
 
 
-def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
+def build_prompt(patient_id: int, db: Session, disease_probabilities) -> str:
     """Build a prompt for the LLM based on patient data and disease probabilities."""
     patient_result = (
         db.query(Patient.age, Patient.country_id, Patient.sex, Patient.race)
         .filter(Patient.id == patient_id)
         .first()
     )
-
-    country = (
-        db.query(Country.common_name)
-        .filter(Country.id == patient_result.country_id)
-        .first()
-    )
+    country: str = fetch_countries(
+    )[patient_result.country_id - 1]['common_name']
     if patient_result.race:
         patient: dict[str, int | str] = {
             'age': patient_result.age,
-            'country': country[0],
+            'country': country,
             'sex': patient_result.sex,
             'race': patient_result.race
         }
@@ -452,7 +447,7 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
     negative_diseases = lab_results.get('negative_diseases', [])
     symptoms = lab_results.get('symptoms', [])
     biomarkers = lab_results.get('biomarkers', {})
-    formatted_biomarkers: list[str] = format_biomarkers(biomarkers, db)
+    formatted_biomarkers: list[str] = format_biomarkers(biomarkers)
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
         'biomarker_probabilities', [])
     top_3_diagnoses: list[tuple[str, float]] = [
@@ -470,51 +465,6 @@ def build_prompt(*, patient_id: int, db: Session, disease_probabilities) -> str:
     rendered_prompt: str = template.render(**dynamic_data)
     print(f'Rendered prompt: {rendered_prompt}')
     return rendered_prompt
-
-
-@api_router.post('/{patient_id}/generate/openrouter')
-def generate_openrouter(patient_id: int, disease_probabilities: dict,
-                        user: Annotated[dict: [str, Any], Depends(get_current_user)],
-                        db: Session = Depends(get_db)) -> dict[str, str]:
-    """Generate an LLM response based on calculated disease probabilities."""
-    if not user:
-        raise HTTPException(status_code=401, detail='Authentication failed')
-
-    headers: dict[str, str] = {
-        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://febrilogic.com',
-        'X-Title': 'FebriLogic'
-    }
-
-    rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
-                                        disease_probabilities=disease_probabilities)
-    data: dict[str, str] = {
-        'model': OPENROUTER_MODEL,
-        'messages': [
-            {
-                'role': 'user',
-                'content': rendered_prompt
-            }
-        ]
-    }
-    response = requests.post(url=OPENROUTER_URL,
-                             headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
-    choices: list[dict[str, Any]] = response.json().get('choices', [])
-    if not choices:
-        raise HTTPException(status_code=500,
-                            detail='No choices returned from OpenRouter API')
-    if 'message' not in choices[0]:
-        raise HTTPException(status_code=500,
-                            detail='No message in the response from OpenRouter API')
-    message: dict[str, Any] = choices[0].get('message', {})
-    if 'content' not in message:
-        raise HTTPException(status_code=500,
-                            detail='No content in the response from OpenRouter API')
-    content = message.get('content', '')
-    return {
-        'content': content
-    }
 
 
 @api_router.post('/{patient_id}/generate/groq')
@@ -546,3 +496,48 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
         }
     raise HTTPException(
         status_code=500, detail='Invalid response from Groq API')
+
+
+@api_router.post('/{patient_id}/generate/openrouter')
+def generate_openrouter(patient_id: int, disease_probabilities: dict,
+                        user: Annotated[dict: [str, Any], Depends(get_current_user)],
+                        db: Session = Depends(get_db)) -> dict[str, str]:
+    """Generate an LLM response based on calculated disease probabilities."""
+    if not user:
+        raise HTTPException(status_code=401, detail='Authentication failed')
+
+    headers: dict[str, str] = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json',
+        'HTTP-Referer': STREAMLIT_BASE_URL,
+        'X-Title': 'FebriLogic'
+    }
+
+    rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
+                                        disease_probabilities=disease_probabilities)
+    data: dict[str, str] = {
+        'model': OPENROUTER_MODEL,
+        'messages': [
+            {
+                'role': 'user',
+                'content': rendered_prompt
+            }
+        ]
+    }
+    response = requests.post(url=OPENROUTER_URL,
+                             headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
+    choices: list[dict[str, Any]] = response.json().get('choices', [])
+    if not choices:
+        raise HTTPException(status_code=500,
+                            detail='No choices returned from OpenRouter API')
+    if 'message' not in choices[0]:
+        raise HTTPException(status_code=500,
+                            detail='No message in the response from OpenRouter API')
+    message: dict[str, Any] = choices[0].get('message', {})
+    if 'content' not in message:
+        raise HTTPException(status_code=500,
+                            detail='No content in the response from OpenRouter API')
+    content = message.get('content', '')
+    return {
+        'content': content
+    }

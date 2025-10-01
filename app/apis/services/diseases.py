@@ -6,7 +6,7 @@ from apis.models.model import Disease
 
 
 @lru_cache(maxsize=1)
-def get_diseases() -> list[str]:
+def fetch_diseases() -> list[str]:
     """Get diseases stored in the database with caching."""
     with SessionLocal() as db:
         diseases: list[str] = [

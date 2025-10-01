@@ -27,7 +27,7 @@ from apis.models.patient_request import PatientRequest
 from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
-from apis.services.biomarkers import get_biomarker_stats
+from apis.services.biomarkers import fetch_biomarker_stats
 from apis.tools.afi_model import (
     calculate_disease_scores, softmax, load_disease_data,
     expand_diseases_for_severity, update_with_all_biomarkers
@@ -271,8 +271,8 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
 
 @api_router.get('/{patient_id}/calculate')
 def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
-              db: Session = Depends(get_db),
-              biomarker_df: DataFrame = Depends(get_biomarker_stats)) -> dict[str, Any]:
+              biomarker_df: Annotated[DataFrame, Depends(fetch_biomarker_stats)],
+              db: Session = Depends(get_db)) -> dict[str, Any]:
     """Calculate disease probabilities based on patient symptoms and biomarkers."""
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication failed')

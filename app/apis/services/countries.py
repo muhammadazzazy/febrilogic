@@ -6,7 +6,7 @@ from apis.models.model import Country
 
 
 @lru_cache(maxsize=1)
-def get_cached_countries() -> list[dict[str, str | int]]:
+def fetch_countries() -> list[dict[str, str | int]]:
     """Fetch countries from the database with caching."""
     with SessionLocal() as db:
         countries: list[dict[str, str | int]] = [

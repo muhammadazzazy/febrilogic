@@ -7,7 +7,7 @@ from apis.models.model import Symptom, SymptomCategory
 
 
 @lru_cache(maxsize=1)
-def get_symptom_definitions() -> defaultdict[str, list[tuple[str, str]]]:
+def fetch_symptom_definitions() -> defaultdict[str, list[tuple[str, str]]]:
     """Get symptom definitions grouped by category."""
     with SessionLocal() as db:
         results = (

@@ -11,7 +11,7 @@ from apis.models.model import Biomarker, biomarker_units, Unit
 
 
 @lru_cache(maxsize=1)
-def get_biomarker_stats() -> DataFrame:
+def fetch_biomarker_stats() -> DataFrame:
     """Get cached biomarker statistics dataframe."""
     biomarker_df: DataFrame = pd.read_csv(BIOMARKER_STATS_FILE)
     biomarker_df['disease'] = biomarker_df['disease'].astype(str).str.strip()
@@ -42,7 +42,7 @@ def fetch_biomarkers() -> list[dict[str, str]]:
 
 
 @lru_cache(maxsize=1)
-def fetch_biomarker_units() -> dict[str, dict[str, list[str]]]:
+def fetch_biomarker_units() -> dict[str, list[str]]:
     """Fetch all biomarker units from the database."""
     with SessionLocal() as db:
         results = (

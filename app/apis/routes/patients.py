@@ -1,23 +1,22 @@
 """Insert, update, and retrieve patient information."""
-from decimal import Decimal
 from typing import Annotated, Any
 
 import json
 import requests
 from fastapi import APIRouter, Depends, HTTPException
 from groq import Groq
-from jinja2 import Template
 from pandas import DataFrame
-from sqlalchemy import Numeric, cast, func, select, tuple_
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.orm import Session
 
 from apis.config import (
     GROQ_API_KEY, GROQ_MODEL,
     OPENROUTER_API_KEY, OPENROUTER_MODEL, OPENROUTER_URL,
     OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT,
-    PROMPT_TEMPLATE, STREAMLIT_BASE_URL
+    STREAMLIT_BASE_URL
 )
 from apis.db.database import get_db
+from apis.db.patients import get_latest_lab_results
 from apis.models.model import (
     Biomarker, Disease, Patient, Symptom, Unit,
     biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
@@ -27,12 +26,12 @@ from apis.models.patient_request import PatientRequest
 from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
-from apis.services.biomarkers import fetch_biomarker_stats, fetch_biomarker_units
-from apis.services.countries import fetch_countries
+from apis.services.biomarkers import fetch_biomarker_stats
 from apis.tools.afi_model import (
     calculate_disease_scores, softmax, load_disease_data,
     expand_diseases_for_severity, update_with_all_biomarkers
 )
+from apis.tools.prompt import build_prompt
 
 api_router: APIRouter = APIRouter(
     prefix='/api/patients'
@@ -363,110 +362,6 @@ def calculate(patient_id: int, user: Annotated[dict[str, str | int], Depends(get
     }
 
 
-def format_biomarkers(biomarkers: dict) -> list[str]:
-    """Format biomarkers for rendered prompt."""
-    formatted_biomarkers: list[str] = []
-    for abbreviation, value in biomarkers.items():
-        if isinstance(value, Decimal):
-            value = int(
-                value) if value == value.to_integral() else float(value)
-        unit: str = fetch_biomarker_units().get(abbreviation, [''])[0]
-        formatted_biomarkers.append(f'- {abbreviation}: {value} {unit}')
-    return formatted_biomarkers
-
-
-def get_latest_lab_results(patient_id: int, db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Get the latest lab results for a patient."""
-    latest_datetime = db.execute(
-        select(patient_negative_diseases.c.created_at)
-        .where(patient_negative_diseases.c.patient_id == patient_id)
-        .order_by(patient_negative_diseases.c.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-
-    negative_diseases: list[str] = db.query(Disease.name).join(
-        patient_negative_diseases).filter(
-        patient_negative_diseases.c.patient_id == patient_id,
-        patient_negative_diseases.c.created_at == latest_datetime
-    ).all()
-
-    latest_datetime = db.execute(
-        select(patient_symptoms.c.created_at)
-        .where(patient_symptoms.c.patient_id == patient_id)
-        .order_by(patient_symptoms.c.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-
-    symptoms: list[tuple[str]] = db.query(Symptom.name).join(patient_symptoms).filter(
-        patient_symptoms.c.patient_id == patient_id,
-        patient_symptoms.c.created_at == latest_datetime
-    ).all()
-
-    latest_datetime = db.execute(
-        select(patient_biomarkers.c.created_at)
-        .where(patient_biomarkers.c.patient_id == patient_id)
-        .order_by(patient_biomarkers.c.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    biomarkers: list[tuple[str, float]] = db.query(Biomarker.abbreviation, func.round(cast(
-        patient_biomarkers.c.value, Numeric), 2)).join(
-        patient_biomarkers).filter(
-        patient_biomarkers.c.patient_id == patient_id,
-        patient_biomarkers.c.created_at == latest_datetime
-    ).all()
-    return {
-        'negative_diseases': [d[0] for d in negative_diseases],
-        'symptoms': [s[0].replace('_', ' ').title() for s in symptoms],
-        'biomarkers': {b[0]: b[1] for b in biomarkers}
-    }
-
-
-def build_prompt(patient_id: int, db: Session, disease_probabilities) -> str:
-    """Build a prompt for the LLM based on patient data and disease probabilities."""
-    patient_result = (
-        db.query(Patient.age, Patient.country_id, Patient.sex, Patient.race)
-        .filter(Patient.id == patient_id)
-        .first()
-    )
-    country: str = fetch_countries(
-    )[patient_result.country_id - 1]['common_name']
-    if patient_result.race:
-        patient: dict[str, int | str] = {
-            'age': patient_result.age,
-            'country': country,
-            'sex': patient_result.sex,
-            'race': patient_result.race
-        }
-    else:
-        patient: dict[str, int | str] = {
-            'age': patient_result.age,
-            'country': country[0],
-            'sex': patient_result.sex
-        }
-    lab_results = get_latest_lab_results(patient_id, db)
-    negative_diseases = lab_results.get('negative_diseases', [])
-    symptoms = lab_results.get('symptoms', [])
-    biomarkers = lab_results.get('biomarkers', {})
-    formatted_biomarkers: list[str] = format_biomarkers(biomarkers)
-    biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
-        'biomarker_probabilities', [])
-    top_3_diagnoses: list[tuple[str, float]] = [
-        (d[0], d[1]) for d in biomarker_probabilities[:3]
-    ]
-    template: Template = Template(PROMPT_TEMPLATE.read_text())
-    dynamic_data: dict[str, Any] = {
-        'patient_id': patient_id,
-        'patient_info': f"Age {patient['age']}, {patient['country']}, {patient['sex']}, {patient['race']}",
-        'negative_diseases': ', '.join(negative_diseases),
-        'symptoms': ', '.join(symptoms),
-        'biomarkers': '\n'.join(formatted_biomarkers),
-        'top_3_diagnoses': top_3_diagnoses
-    }
-    rendered_prompt: str = template.render(**dynamic_data)
-    print(f'Rendered prompt: {rendered_prompt}')
-    return rendered_prompt
-
-
 @api_router.post('/{patient_id}/generate/groq')
 def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
                   user: Annotated[dict[str, str | int], Depends(get_current_user)],
@@ -474,8 +369,17 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
     """Generate an LLM response using Groq."""
     if not user:
         raise HTTPException(status_code=401, detail='Authentication failed')
-    rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
-                                        disease_probabilities=disease_probabilities)
+
+    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
+                                                Patient.user_id == user['id']).first()
+    if not patient:
+        raise HTTPException(status_code=403,
+                            detail='Not enough permissions to access this patient')
+
+    lab_results: dict[str, Any] = get_latest_lab_results(
+        patient_id=patient_id, db=db)
+    rendered_prompt: str = build_prompt(
+        patient=patient, lab_results=lab_results, disease_probabilities=disease_probabilities)
     client: Groq = Groq(api_key=GROQ_API_KEY)
     response = client.chat.completions.create(
         model=GROQ_MODEL,
@@ -507,15 +411,22 @@ def generate_openrouter(
     if not user:
         raise HTTPException(status_code=401, detail='Authentication failed')
 
+    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
+                                                Patient.user_id == user['id']).first()
+    if not patient:
+        raise HTTPException(status_code=403,
+                            detail='Not enough permissions to access this patient')
+
     headers: dict[str, str] = {
         'Authorization': f'Bearer {OPENROUTER_API_KEY}',
         'Content-Type': 'application/json',
         'HTTP-Referer': STREAMLIT_BASE_URL,
         'X-Title': 'FebriLogic'
     }
-
-    rendered_prompt: str = build_prompt(patient_id=patient_id, db=db,
-                                        disease_probabilities=disease_probabilities)
+    lab_results: dict[str, Any] = get_latest_lab_results(
+        patient_id=patient_id, db=db)
+    rendered_prompt: str = build_prompt(
+        patient=patient, lab_results=lab_results, disease_probabilities=disease_probabilities)
     data: dict[str, str] = {
         'model': OPENROUTER_MODEL,
         'messages': [

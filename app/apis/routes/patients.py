@@ -41,7 +41,7 @@ api_router: APIRouter = APIRouter(
 
 @api_router.post('')
 def upload_patient_data(patient_request: PatientRequest,
-                        user: Annotated[dict, Depends(get_current_user)],
+                        user: Annotated[dict[str, str | int], Depends(get_current_user)],
                         db: Session = Depends(get_db)) -> dict[str, Any]:
     """Upload patient information to the database."""
     if user is None:
@@ -75,7 +75,7 @@ def upload_patient_data(patient_request: PatientRequest,
 
 
 @api_router.get('')
-def get_patient_info(user: Annotated[dict, Depends(get_current_user)],
+def get_patient_info(user: Annotated[dict[str, str | int], Depends(get_current_user)],
                      db: Session = Depends(get_db)) -> dict[str, list[dict[str, Any]]]:
     """Get patient information based on the authenticated user."""
     if user is None:
@@ -112,7 +112,7 @@ def get_patient_info(user: Annotated[dict, Depends(get_current_user)],
 @api_router.post('/{patient_id}')
 def update_patient_info(patient_id: int,
                         patient_request: PatientRequest,
-                        user: Annotated[dict, Depends(get_current_user)],
+                        user: Annotated[dict[str, str | int], Depends(get_current_user)],
                         db: Session = Depends(get_db)) -> dict[str, Any]:
     """Update patient information in the database."""
     if user is None:
@@ -143,7 +143,7 @@ def update_patient_info(patient_id: int,
 def upload_patient_negative_diseases(
     patient_id: int,
     request: PatientNegativeDiseasesRequest,
-    user: Annotated[dict, Depends(get_current_user)],
+    user: Annotated[dict[str, str | int], Depends(get_current_user)],
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
     """Add diseases that the patient tested negative for."""
@@ -180,7 +180,7 @@ def upload_patient_negative_diseases(
 def upload_patient_biomarkers(
     patient_id: int,
     request: PatientBiomarkersRequest,
-    user: Annotated[dict, Depends(get_current_user)],
+    user: Annotated[dict[str, str | int], Depends(get_current_user)],
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
     """Upload patient biomarkers to the database."""
@@ -234,7 +234,7 @@ def upload_patient_biomarkers(
 
 @api_router.post('/{patient_id}/symptoms')
 def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
-                            user: Annotated[dict, Depends(get_current_user)],
+                            user: Annotated[dict[str, str | int], Depends(get_current_user)],
                             db: Session = Depends(get_db)) -> dict[str, Any]:
     """Upload patient symptoms to the database."""
     if user is None:
@@ -270,7 +270,7 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
 
 
 @api_router.get('/{patient_id}/calculate')
-def calculate(patient_id: int, user: Annotated[dict, Depends(get_current_user)],
+def calculate(patient_id: int, user: Annotated[dict[str, str | int], Depends(get_current_user)],
               biomarker_df: Annotated[DataFrame, Depends(fetch_biomarker_stats)],
               db: Session = Depends(get_db)) -> dict[str, Any]:
     """Calculate disease probabilities based on patient symptoms and biomarkers."""
@@ -469,7 +469,7 @@ def build_prompt(patient_id: int, db: Session, disease_probabilities) -> str:
 
 @api_router.post('/{patient_id}/generate/groq')
 def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
-                  user: Annotated[dict, Depends(get_current_user)],
+                  user: Annotated[dict[str, str | int], Depends(get_current_user)],
                   db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response using Groq."""
     if not user:
@@ -501,7 +501,7 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
 @api_router.post('/{patient_id}/generate/openrouter')
 def generate_openrouter(
         patient_id: int, disease_probabilities: dict,
-        user: Annotated[dict[str, Any], Depends(get_current_user)],
+        user: Annotated[dict[str, str | int], Depends(get_current_user)],
         db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response based on calculated disease probabilities."""
     if not user:

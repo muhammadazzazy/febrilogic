@@ -15,7 +15,7 @@ api_router: APIRouter = APIRouter(
 
 @api_router.get('')
 def get_biomarkers(
-        user: Annotated[dict, Depends(get_current_user)],
+        user: Annotated[dict[str, str | int], Depends(get_current_user)],
         biomarkers: Annotated[list[dict[str, str]], Depends(fetch_biomarkers)]
 ) -> dict[str, list[dict[str, str]]]:
     """Fetch cached biomarkers."""
@@ -29,7 +29,7 @@ def get_biomarkers(
 
 @api_router.get('/units')
 def get_biomarker_units(
-        user: Annotated[dict, Depends(get_current_user)],
+        user: Annotated[dict[str, str | int], Depends(get_current_user)],
         biomarker_units: Annotated[dict[str, list[str]], Depends(
             fetch_biomarker_units)]
 ) -> dict[str, dict[str, list[str]]]:

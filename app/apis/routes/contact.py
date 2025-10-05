@@ -1,6 +1,7 @@
 """Send emails to the support team."""
-import resend
 from datetime import datetime
+
+import resend
 from fastapi import APIRouter, HTTPException
 from jinja2 import Template
 from starlette import status

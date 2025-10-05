@@ -14,7 +14,7 @@ api_router: APIRouter = APIRouter(
 
 @api_router.get('/categories-definitions')
 def get_symptom_definitions(
-        user: Annotated[dict, Depends(get_current_user)],
+        user: Annotated[dict[str, str | int], Depends(get_current_user)],
         symptom_definitions: Annotated[dict[str, list[tuple[str, str]]], Depends(
             fetch_symptom_definitions)]
 ) -> dict[str, Any]:

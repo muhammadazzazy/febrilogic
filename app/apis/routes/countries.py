@@ -14,7 +14,7 @@ api_router: APIRouter = APIRouter(
 
 @api_router.get('')
 def get_countries(
-    user: Annotated[dict, Depends(get_current_user)],
+    user: Annotated[dict[str, str | int], Depends(get_current_user)],
     countries: Annotated[list[dict[str, str | int]], Depends(fetch_countries)]
 ) -> dict[str, list[dict[str, str | int]]]:
     """Fetch countries from the database."""

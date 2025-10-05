@@ -37,7 +37,7 @@ def contact(contact_request: ContactRequest) -> dict[str, str]:
         if email and 'id' in email:
             print(f"Contact request email ID: {email['id']}")
             return {
-                'message': f"Contact request email {email['id']} sent successfully."
+                'message': f"Contact request email {email['id']} sent successfully"
             }
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

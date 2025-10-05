@@ -134,7 +134,7 @@ def update_patient_info(patient_id: int,
     patient.sex = patient_request.sex
     db.commit()
     return {
-        'message': 'Patient information updated successfully.',
+        'message': 'Patient information updated successfully',
         'patient_id': patient_id
     }
 
@@ -228,7 +228,7 @@ def upload_patient_biomarkers(
     db.commit()
     return {
         'patient_id': patient_id,
-        'message': 'Patient biomarkers uploaded successfully.'
+        'message': 'Patient biomarkers uploaded successfully'
     }
 
 
@@ -263,7 +263,7 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
     db.execute(patient_symptoms.insert(), data)
     db.commit()
     return {
-        'message': 'Patient symptoms uploaded successfully.',
+        'message': 'Patient symptoms uploaded successfully',
         'patient_id': patient_id,
         'symptom_ids': symptom_ids
     }
@@ -499,9 +499,10 @@ def generate_groq(patient_id: int, disease_probabilities: dict[str, Any],
 
 
 @api_router.post('/{patient_id}/generate/openrouter')
-def generate_openrouter(patient_id: int, disease_probabilities: dict,
-                        user: Annotated[dict: [str, Any], Depends(get_current_user)],
-                        db: Session = Depends(get_db)) -> dict[str, str]:
+def generate_openrouter(
+        patient_id: int, disease_probabilities: dict,
+        user: Annotated[dict[str, Any], Depends(get_current_user)],
+        db: Session = Depends(get_db)) -> dict[str, str]:
     """Generate an LLM response based on calculated disease probabilities."""
     if not user:
         raise HTTPException(status_code=401, detail='Authentication failed')

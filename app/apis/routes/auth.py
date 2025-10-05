@@ -237,7 +237,7 @@ def send_password_reset_email(*, email: str, token: str) -> None:
         email: resend.Email = resend.Emails.send(params)
         if email and 'id' in email:
             return {
-                'message': f"Password reset email with ID {email['id']} sent."
+                'message': f"Password reset email with ID {email['id']} sent"
             }
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

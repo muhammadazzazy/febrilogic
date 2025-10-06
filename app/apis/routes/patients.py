@@ -140,7 +140,7 @@ def upload_patient_negative_diseases(
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient')
+                            detail='Not enough permissions to add negative diseases for this patient')
     disease_ids: list[int] = db.scalars(
         select(Disease.id).where(Disease.name.in_(request.negative_diseases))).all()
     data: list[dict[str, Any]] = []
@@ -178,7 +178,7 @@ def upload_patient_biomarkers(
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient')
+                            detail='Not enough permissions to add biomarkers for this patient')
 
     biomarker_value_unit: dict[str, tuple[float, str]
                                ] = request.biomarker_value_unit
@@ -230,7 +230,7 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
                                                 Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
-                            detail='Not enough permissions to update this patient')
+                            detail='Not enough permissions to add symptoms for this patient')
     symptom_names: list[str] = symptom_request.symptom_names
     symptoms: list[int] = db.query(Symptom.id).filter(
         Symptom.name.in_(symptom_names)

@@ -1,11 +1,48 @@
 """AFI model for disease diagnosis using symptoms and biomarkers."""
 import csv
 import math
+from typing import Any
+
 import numpy as np
 import pandas as pd
+from pandas import DataFrame
 from scipy.stats import norm
 
 from apis.config import SYMPTOM_WEIGHTS_FILE
+
+
+def calculate_probabilities(negative_diseases: list[str], positive_symptoms: list[str],
+                            biomarker_row: dict[str, float], biomarker_df: DataFrame) -> dict[str, Any]:
+    """Calculate disease probabilities based on symptoms and biomarkers."""
+    diseases, symptoms = load_disease_data(negative_diseases)
+
+    disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
+                                              positive_symptoms=positive_symptoms)
+    disease_sums = {disease: sum(scores)
+                    for disease, scores in disease_scores.items()}
+    disease_names: list[str] = list(disease_sums.keys())
+    disease_values: list[float] = list(disease_sums.values())
+    prior_probs = softmax(disease_values)
+    sym_probs = list(zip(disease_names, prior_probs))
+    sym_probs_expanded = expand_diseases_for_severity(sym_probs)
+    sym_probs_expanded = sorted(
+        sym_probs_expanded, key=lambda x: x[1], reverse=True)
+    if biomarker_row:
+        bio_probs_vals = update_with_all_biomarkers(
+            [d for d, _ in sym_probs_expanded],
+            [p for _, p in sym_probs_expanded],
+            biomarker_df,
+            biomarker_row
+        )
+        bio_probs = list(
+            zip([d for d, _ in sym_probs_expanded], bio_probs_vals))
+    else:
+        bio_probs = sym_probs_expanded.copy()
+    bio_probs = sorted(bio_probs, key=lambda x: x[1], reverse=True)
+    return {
+        'symptom_probabilities': sym_probs_expanded,
+        'symptom_biomarker_probabilities': bio_probs
+    }
 
 
 def softmax(x: list[float]) -> list[float]:

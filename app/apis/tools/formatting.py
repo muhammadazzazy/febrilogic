@@ -3,10 +3,10 @@ from decimal import Decimal
 from apis.services.biomarkers import fetch_biomarker_units
 
 
-def format_biomarkers(biomarkers: dict) -> list[str]:
+def format_biomarkers(biomarkers: list[tuple[str, str]]) -> list[str]:
     """Format biomarkers for rendered prompt."""
     formatted_biomarkers: list[str] = []
-    for abbreviation, value in biomarkers.items():
+    for abbreviation, value in biomarkers:
         if isinstance(value, Decimal):
             value = int(
                 value) if value == value.to_integral() else float(value)

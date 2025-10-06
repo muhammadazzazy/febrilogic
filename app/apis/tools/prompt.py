@@ -28,7 +28,9 @@ def build_prompt(patient: Patient, lab_results: dict[str, Any],
             'sex': patient.sex
         }
     negative_diseases = lab_results.get('negative_diseases', [])
-    symptoms = lab_results.get('symptoms', [])
+    symptoms: list[str] = lab_results.get('symptoms', [])
+    formatted_symptoms: list[str] = [
+        symptom.title().replace('_', ' ') for symptom in symptoms]
     biomarkers = lab_results.get('biomarkers', {})
     formatted_biomarkers: list[str] = format_biomarkers(biomarkers)
     biomarker_probabilities: list[tuple[str, float]] = disease_probabilities.get(
@@ -40,7 +42,7 @@ def build_prompt(patient: Patient, lab_results: dict[str, Any],
     dynamic_data: dict[str, Any] = {
         'patient_info': f"Age {patient['age']}, {patient['country']}, {patient['sex']}, {patient['race']}",
         'negative_diseases': ', '.join(negative_diseases),
-        'symptoms': ', '.join(symptoms),
+        'symptoms': ', '.join(formatted_symptoms),
         'biomarkers': '\n'.join(formatted_biomarkers),
         'top_3_diagnoses': top_3_diagnoses
     }

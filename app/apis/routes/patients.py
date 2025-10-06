@@ -27,10 +27,7 @@ from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
 from apis.services.biomarkers import fetch_biomarker_stats
-from apis.tools.afi_model import (
-    calculate_disease_scores, softmax, load_disease_data,
-    expand_diseases_for_severity, update_with_all_biomarkers
-)
+from apis.tools.afi_model import calculate_probabilities
 from apis.tools.prompt import build_prompt
 
 api_router: APIRouter = APIRouter(
@@ -46,16 +43,6 @@ def upload_patient_data(patient_request: PatientRequest,
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed')
-    patient_ids: list[int | None] = []
-    patient_ids.append(
-        db.query(Patient.id).order_by(Patient.id.desc()).limit(1).scalar()
-    )
-    patient_ids.append(
-        db.query(patient_symptoms.c.patient_id).order_by(
-            patient_symptoms.c.patient_id.desc()
-        ).limit(1).scalar()
-    )
-
     patient = Patient(
         age=patient_request.age,
         city=patient_request.city,
@@ -282,82 +269,36 @@ def calculate(patient_id: int, user: Annotated[dict[str, str | int], Depends(get
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to access this patient')
 
-    latest_datetime = db.execute(
-        select(patient_negative_diseases.c.created_at)
-        .where(patient_negative_diseases.c.patient_id == patient_id)
-        .order_by(patient_negative_diseases.c.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    print(f'Latest datetime for negative diseases: {latest_datetime}')
+    lab_results: dict[str, Any] = get_latest_lab_results(
+        patient_id=patient_id, db=db)
 
-    negative_diseases: list[str] = [
-        row.name for row in db.query(Disease.name)
-        .join(patient_negative_diseases)
-        .filter(patient_negative_diseases.c.patient_id == patient_id,
-                patient_negative_diseases.c.created_at == latest_datetime).all()
-    ]
-    print(f'Latest negative diseases: {negative_diseases}')
+    negative_diseases: list[str] = lab_results.get('negative_diseases', [])
+    print(f'Negative diseases: {negative_diseases}')
 
-    diseases, symptoms = load_disease_data(negative_diseases)
+    positive_symptoms: list[str] = lab_results.get('symptoms', [])
+    print(f'Positive symptoms: {positive_symptoms}')
 
-    print(f'Diseases loaded: {list(diseases.keys())}')
-    latest_datetime = db.execute(
-        select(patient_symptoms.c.created_at)
-        .where(patient_symptoms.c.patient_id == patient_id)
-        .order_by(patient_symptoms.c.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    print(f'Latest datetime for positive symptoms: {latest_datetime}')
-    positive_symptoms: list[str] = [
-        row.name for row in db.query(Symptom.name)
-        .join(patient_symptoms)
-        .filter(patient_symptoms.c.patient_id == patient_id,
-                patient_symptoms.c.created_at == latest_datetime).all()
-    ]
-    print(f'Latest positive symptoms: {positive_symptoms}')
-    disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
-                                              positive_symptoms=positive_symptoms)
-    disease_sums = {disease: sum(scores)
-                    for disease, scores in disease_scores.items()}
-    disease_names: list[str] = list(disease_sums.keys())
-    disease_values: list[float] = list(disease_sums.values())
-    prior_probs = softmax(disease_values)
-    sym_probs = list(zip(disease_names, prior_probs))
-    sym_probs_expanded = expand_diseases_for_severity(sym_probs)
-    sym_probs_expanded = sorted(
-        sym_probs_expanded, key=lambda x: x[1], reverse=True)
-    latest_datetime = db.execute(
-        select(patient_biomarkers.c.created_at)
-        .where(patient_biomarkers.c.patient_id == patient_id)
-        .order_by(patient_biomarkers.c.created_at.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    print(f'Latest datetime for biomarkers: {latest_datetime}')
-    biomarker_result = db.query(
-        Biomarker.abbreviation,
-        patient_biomarkers.c.value
-    ).join(
-        Biomarker, patient_biomarkers.c.biomarker_id == Biomarker.id).filter(
-        patient_biomarkers.c.patient_id == patient_id,
-        patient_biomarkers.c.created_at == latest_datetime).all()
-    print(f'Latest biomarkers: {biomarker_result}')
+    biomarker_result = lab_results.get('biomarkers', {})
+    print(f'Biomarker results: {biomarker_result}')
+
     biomarker_row: dict[str, float] = {
         row.abbreviation: row.value for row in biomarker_result}
 
-    if biomarker_row:
-        bio_probs_vals = update_with_all_biomarkers(
-            [d for d, _ in sym_probs_expanded],
-            [p for _, p in sym_probs_expanded],
-            biomarker_df,
-            biomarker_row
-        )
-        bio_probs = list(
-            zip([d for d, _ in sym_probs_expanded], bio_probs_vals))
-    else:
-        bio_probs = sym_probs_expanded.copy()
-    bio_probs = sorted(bio_probs, key=lambda x: x[1], reverse=True)
+    calculated_probs = calculate_probabilities(
+        negative_diseases=negative_diseases,
+        positive_symptoms=positive_symptoms,
+        biomarker_row=biomarker_row,
+        biomarker_df=biomarker_df
+    )
+
+    sym_probs = calculated_probs.get('symptom_probabilities', [])
+    bio_probs = calculated_probs.get('symptom_biomarker_probabilities', [])
+
     return {
-        'symptom_probabilities': sym_probs_expanded,
+        'negative_diseases': negative_diseases,
+        'symptoms': positive_symptoms,
+        'biomarkers': biomarker_row,
+        'symptom_probabilities': sym_probs,
         'symptom_biomarker_probabilities': bio_probs
     }
 

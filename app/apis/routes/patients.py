@@ -55,7 +55,7 @@ def upload_patient_data(patient_request: PatientRequest,
     db.commit()
     db.refresh(patient)
     return {
-        'message': 'Patient data uploaded successfully.',
+        'message': 'Patient data uploaded successfully',
         'patient_id': patient.id
     }
 
@@ -104,15 +104,11 @@ def update_patient_info(patient_id: int,
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed')
-    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
-                                                Patient.user_id == user['id']).first()
+    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
+                                                       Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to update this patient')
-    patient = db.query(Patient).filter(
-        Patient.id == patient_id,
-        Patient.user_id == user['id']
-    ).first()
     patient.age = patient_request.age
     patient.city = patient_request.city
     patient.country_id = patient_request.country_id
@@ -136,8 +132,8 @@ def upload_patient_negative_diseases(
     if not user:
         raise HTTPException(status_code=401, detail="Authentication failed")
 
-    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
-                                                Patient.user_id == user['id']).first()
+    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
+                                                       Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to add negative diseases for this patient')
@@ -174,8 +170,8 @@ def upload_patient_biomarkers(
         raise HTTPException(status_code=401,
                             detail='Authentication failed')
 
-    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
-                                                Patient.user_id == user['id']).first()
+    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
+                                                       Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to add biomarkers for this patient')
@@ -226,8 +222,8 @@ def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
     if user is None:
         raise HTTPException(status_code=401,
                             detail='Authentication failed')
-    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
-                                                Patient.user_id == user['id']).first()
+    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
+                                                       Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to add symptoms for this patient')
@@ -263,8 +259,8 @@ def calculate(patient_id: int, user: Annotated[dict[str, str | int], Depends(get
     if user is None:
         raise HTTPException(status_code=401, detail='Authentication failed')
 
-    patient: Patient = db.query(Patient).filter(Patient.id == patient_id,
-                                                Patient.user_id == user['id']).first()
+    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
+                                                       Patient.user_id == user['id']).first()
     if not patient:
         raise HTTPException(status_code=403,
                             detail='Not enough permissions to access this patient')

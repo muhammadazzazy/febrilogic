@@ -18,7 +18,7 @@ from apis.config import (
 from apis.db.database import get_db
 from apis.db.patients import get_latest_lab_results
 from apis.models.model import (
-    Biomarker, Disease, Patient, Symptom, Unit,
+    Biomarker, Patient, Symptom, Unit,
     biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
 from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
@@ -27,6 +27,7 @@ from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
 from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
 from apis.services.biomarkers import fetch_biomarker_stats
+from apis.services.diseases import fetch_diseases
 from apis.tools.afi_model import calculate_probabilities
 from apis.tools.prompt import build_prompt
 
@@ -135,10 +136,16 @@ def upload_patient_negative_diseases(
     patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
                                                        Patient.user_id == user['id']).first()
     if not patient:
-        raise HTTPException(status_code=403,
-                            detail='Not enough permissions to add negative diseases for this patient')
-    disease_ids: list[int] = db.scalars(
-        select(Disease.id).where(Disease.name.in_(request.negative_diseases))).all()
+        raise HTTPException(
+            status_code=403,
+            detail='Not enough permissions to add negative diseases for this patient'
+        )
+    disease_names: set[str] = set(request.negative_diseases)
+    diseases: dict[str, int] = fetch_diseases()
+    disease_ids: list[int] = [
+        id_ for name, id_ in diseases.items()
+        if name in disease_names
+    ]
     data: list[dict[str, Any]] = []
     for disease_id in disease_ids:
         data.append({
@@ -373,8 +380,11 @@ def generate_openrouter(
             }
         ]
     }
-    response = requests.post(url=OPENROUTER_URL,
-                             headers=headers, data=json.dumps(data), timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT))
+    response = requests.post(
+        url=OPENROUTER_URL,
+        headers=headers, data=json.dumps(data),
+        timeout=(OPENROUTER_CONNECT_TIMEOUT, OPENROUTER_READ_TIMEOUT)
+    )
     choices: list[dict[str, Any]] = response.json().get('choices', [])
     if not choices:
         raise HTTPException(status_code=500,

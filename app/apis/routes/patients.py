@@ -18,8 +18,8 @@ from apis.config import (
 from apis.db.database import get_db
 from apis.db.patients import get_latest_lab_results
 from apis.models.model import (
-    Biomarker, Patient, Symptom, Unit,
-    biomarker_units, patient_biomarkers, patient_negative_diseases, patient_symptoms
+    Biomarker, Patient, Unit, biomarker_units,
+    patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
 from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
 from apis.models.patient_request import PatientRequest
@@ -28,6 +28,7 @@ from apis.models.symptom_request import SymptomRequest
 from apis.routes.auth import get_current_user
 from apis.services.biomarkers import fetch_biomarker_stats
 from apis.services.diseases import fetch_diseases
+from apis.services.symptoms import fetch_symptom_ids
 from apis.tools.afi_model import calculate_probabilities
 from apis.tools.prompt import build_prompt
 
@@ -165,6 +166,44 @@ def upload_patient_negative_diseases(
     }
 
 
+@api_router.post('/{patient_id}/symptoms')
+def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
+                            user: Annotated[dict[str, str | int], Depends(get_current_user)],
+                            db: Session = Depends(get_db),
+                            symptoms: dict[str, int] = Depends(
+                                fetch_symptom_ids)) -> dict[str, Any]:
+    """Upload patient symptoms to the database."""
+    if user is None:
+        raise HTTPException(status_code=401,
+                            detail='Authentication failed')
+    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
+                                                       Patient.user_id == user['id']).first()
+    if not patient:
+        raise HTTPException(status_code=403,
+                            detail='Not enough permissions to add symptoms for this patient')
+    symptom_names: list[str] = symptom_request.symptom_names
+    symptom_ids: list[int] = [
+        symptoms[name] for name in symptom_names
+        if name in symptoms
+    ]
+    data: list[dict[str, int | None]] = [
+        {'patient_id': patient_id, 'symptom_id': sid}
+        for sid in symptom_ids
+    ]
+    if not data:
+        data.append({
+            'patient_id': patient_id,
+            'symptom_id': None
+        })
+    db.execute(patient_symptoms.insert(), data)
+    db.commit()
+    return {
+        'message': 'Patient symptoms uploaded successfully',
+        'patient_id': patient_id,
+        'symptom_ids': symptom_ids
+    }
+
+
 @api_router.post('/{patient_id}/biomarkers')
 def upload_patient_biomarkers(
     patient_id: int,
@@ -218,43 +257,6 @@ def upload_patient_biomarkers(
     return {
         'patient_id': patient_id,
         'message': 'Patient biomarkers uploaded successfully'
-    }
-
-
-@api_router.post('/{patient_id}/symptoms')
-def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
-                            user: Annotated[dict[str, str | int], Depends(get_current_user)],
-                            db: Session = Depends(get_db)) -> dict[str, Any]:
-    """Upload patient symptoms to the database."""
-    if user is None:
-        raise HTTPException(status_code=401,
-                            detail='Authentication failed')
-    patient: Patient | None = db.query(Patient).filter(Patient.id == patient_id,
-                                                       Patient.user_id == user['id']).first()
-    if not patient:
-        raise HTTPException(status_code=403,
-                            detail='Not enough permissions to add symptoms for this patient')
-    symptom_names: list[str] = symptom_request.symptom_names
-    symptoms: list[int] = db.query(Symptom.id).filter(
-        Symptom.name.in_(symptom_names)
-    ).all()
-    symptom_ids = [row[0]
-                   for row in symptoms]
-    data: list[dict[str, int | None]] = [
-        {'patient_id': patient_id, 'symptom_id': sid}
-        for sid in symptom_ids
-    ]
-    if not data:
-        data.append({
-            'patient_id': patient_id,
-            'symptom_id': None
-        })
-    db.execute(patient_symptoms.insert(), data)
-    db.commit()
-    return {
-        'message': 'Patient symptoms uploaded successfully',
-        'patient_id': patient_id,
-        'symptom_ids': symptom_ids
     }
 
 

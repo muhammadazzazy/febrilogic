@@ -17,7 +17,7 @@ from apis.config import (
 )
 from apis.db.database import get_db
 from apis.db.patients import get_latest_lab_results
-from apis.models.biomarkers import BiomarkerInfo
+from apis.models.biomarker import BiomarkerInfo
 from apis.models.model import (
     Patient, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )

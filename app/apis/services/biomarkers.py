@@ -8,7 +8,7 @@ from pandas import DataFrame
 from apis.config import BIOMARKER_STATS_FILE
 from apis.db.database import SessionLocal
 from apis.models.model import Biomarker, biomarker_units, Unit
-from apis.models.biomarkers import BiomarkerInfo
+from apis.models.biomarker import BiomarkerInfo
 
 
 @lru_cache(maxsize=1)

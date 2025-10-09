@@ -25,5 +25,6 @@ class ChangePasswordForm(BaseModel):
 
 
 class Token(BaseModel):
+    """Encapsulate a JWT token response."""
     access_token: str
     token_type: str

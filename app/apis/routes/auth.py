@@ -30,11 +30,9 @@ from apis.config import (
 from apis.db.database import get_db
 
 from apis.models.model import User
-from apis.models.password_reset_request import PasswordResetRequest
-from apis.models.change_password_form import ChangePasswordForm
-from apis.models.reset_password_form import ResetPasswordForm
-from apis.models.token import Token
-from apis.models.user_request import UserRequest
+from apis.models.user import (
+    ChangePasswordForm, PasswordResetRequest, ResetPasswordForm, Token, UserRequest
+)
 
 resend.api_key = RESEND_API_KEY
 

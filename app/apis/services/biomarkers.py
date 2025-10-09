@@ -1,13 +1,14 @@
 """Service to handle biomarker statistics."""
+from collections import defaultdict
 from functools import lru_cache
 
 import pandas as pd
 from pandas import DataFrame
 
-
 from apis.config import BIOMARKER_STATS_FILE
 from apis.db.database import SessionLocal
 from apis.models.model import Biomarker, biomarker_units, Unit
+from apis.models.biomarkers import BiomarkerInfo
 
 
 @lru_cache(maxsize=1)
@@ -57,3 +58,34 @@ def fetch_biomarker_units() -> dict[str, list[str]]:
             biomarker_mapping[abbreviation] = []
         biomarker_mapping[abbreviation].append(symbol)
     return biomarker_mapping
+
+
+@lru_cache(maxsize=1)
+def fetch_biomarker_catalog() -> dict[str, BiomarkerInfo]:
+    """Fetch biomarker catalog from the database."""
+    catalog: dict[str, BiomarkerInfo] = {}
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(
+                Biomarker.abbreviation,
+                Biomarker.id,
+                Unit.symbol,
+                biomarker_units.c.factor
+            )
+            .join(biomarker_units, biomarker_units.c.biomarker_id == Biomarker.id)
+            .join(Unit, biomarker_units.c.unit_id == Unit.id)
+            .all()
+        )
+    units_map: dict[str, dict[str, float]] = defaultdict(dict)
+    biomarker_ids: dict[str, int] = {}
+    for abbrev, biomarker_id, unit_symbol, factor in rows:
+        abbreviation, unit = abbrev.strip(), unit_symbol.strip()
+        biomarker_ids[abbreviation] = biomarker_id
+        units_map[abbreviation][unit] = float(factor)
+
+    catalog: dict[str, BiomarkerInfo] = {
+        abbrev: BiomarkerInfo(id=biomarker_ids[abbrev], units=units)
+        for abbrev, units in units_map.items()
+    }
+    return catalog

@@ -1,7 +1,6 @@
 """Encapsulate the database models for the FebriLogic backend."""
 from typing import List
 
-import pandas as pd
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func

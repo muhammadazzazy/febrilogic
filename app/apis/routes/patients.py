@@ -6,7 +6,7 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException
 from groq import Groq
 from pandas import DataFrame
-from sqlalchemy import func, select, tuple_
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from apis.config import (
@@ -17,16 +17,15 @@ from apis.config import (
 )
 from apis.db.database import get_db
 from apis.db.patients import get_latest_lab_results
+from apis.models.biomarkers import BiomarkerInfo
 from apis.models.model import (
-    Biomarker, Patient, Unit, biomarker_units,
-    patient_biomarkers, patient_negative_diseases, patient_symptoms
+    Patient, patient_biomarkers, patient_negative_diseases, patient_symptoms
 )
-from apis.models.patient_negative_diseases_request import PatientNegativeDiseasesRequest
-from apis.models.patient_request import PatientRequest
-from apis.models.patient_biomarkers_request import PatientBiomarkersRequest
-from apis.models.symptom_request import SymptomRequest
+from apis.models.patient import (
+    PatientBiomarkersRequest, PatientNegativeDiseasesRequest, PatientRequest, PatientSymptomsRequest
+)
 from apis.routes.auth import get_current_user
-from apis.services.biomarkers import fetch_biomarker_stats
+from apis.services.biomarkers import fetch_biomarker_stats, fetch_biomarker_catalog
 from apis.services.diseases import fetch_diseases
 from apis.services.symptoms import fetch_symptom_ids
 from apis.tools.afi_model import calculate_probabilities
@@ -167,7 +166,7 @@ def upload_patient_negative_diseases(
 
 
 @api_router.post('/{patient_id}/symptoms')
-def upload_patient_symptoms(patient_id: int, symptom_request: SymptomRequest,
+def upload_patient_symptoms(patient_id: int, symptom_request: PatientSymptomsRequest,
                             user: Annotated[dict[str, str | int], Depends(get_current_user)],
                             db: Session = Depends(get_db),
                             symptoms: dict[str, int] = Depends(
@@ -209,7 +208,9 @@ def upload_patient_biomarkers(
     patient_id: int,
     request: PatientBiomarkersRequest,
     user: Annotated[dict[str, str | int], Depends(get_current_user)],
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    catalog: dict[str, BiomarkerInfo] = Depends(
+        fetch_biomarker_catalog)
 ) -> dict[str, Any]:
     """Upload patient biomarkers to the database."""
     if user is None:
@@ -227,16 +228,11 @@ def upload_patient_biomarkers(
     pairs: list[tuple[str, str]] = [
         (abbrev, unit) for abbrev, (_, unit) in request.biomarker_value_unit.items()
     ]
-    results = db.query(
-        Biomarker.abbreviation,
-        Biomarker.id,
-        biomarker_units.c.factor
-    ).join(biomarker_units, biomarker_units.c.biomarker_id == Biomarker.id).join(Unit, biomarker_units.c.unit_id == Unit.id).filter(tuple_(Biomarker.abbreviation, Unit.symbol).in_(pairs)).all()
-    biomarker_factors: dict[str, float] = {}
-    biomarker_ids: dict[str, int] = {}
-    for abbreviation, biomarker_id, factor in results:
-        biomarker_factors[abbreviation] = factor
-        biomarker_ids[abbreviation] = biomarker_id
+    biomarker_ids: dict[str, int] = {a: catalog[a].id for a, u in pairs
+                                     if a in catalog and u in catalog[a].units}
+    biomarker_factors: dict[str, float] = {a: catalog[a].units[u]
+                                           for a, u in pairs
+                                           if a in catalog and u in catalog[a].units}
     data: list[dict[str, Any]] = []
     for biomarker, (value, _) in biomarker_value_unit.items():
         data.append(

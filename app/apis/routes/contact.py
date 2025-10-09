@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from jinja2 import Template
 from starlette import status
 
-from apis.models.contact_request import ContactRequest
+from apis.models.contact import ContactRequest
 from apis.config import RESEND_API_KEY, RESEND_MAX_RETRIES, SUPPORT_REQUEST_TEMPLATE
 
 

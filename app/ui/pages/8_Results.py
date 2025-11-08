@@ -114,31 +114,3 @@ if submitted:
             subset=['Percentage (%)'], cmap='Blues')
         cols[1].subheader('After Symptoms + Biomarkers')
         cols[1].dataframe(styled_combined_df, use_container_width=True)
-
-if submitted:
-    payload: dict[str, Any] = {
-        'symptom_probabilities': symptom_probabilities,
-        'biomarker_probabilities': biomarker_probabilities
-    }
-    headers: dict[str, str] = {
-        'Authorization': f'Bearer {token}'
-    }
-    try:
-        with st.spinner('Generating LLM response...'):
-            response = requests.post(
-                url=f'{FAST_API_BASE_URL}/api/patients/{patient_id}/generate/groq',
-                headers=headers,
-                json=payload,
-                timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT)
-            )
-        response.raise_for_status()
-        content: str = response.json().get('content', '')
-        with st.expander('LLM Response', expanded=True, icon='🤖'):
-            st.write(content)
-    except HTTPError as e:
-        detail: str = e.response.json().get('detail', 'Unknown error')
-        st.error(f'Error generating LLM response: {detail}')
-        st.stop()
-    except requests.exceptions.ConnectionError:
-        st.error('Please check your internet connection or try again later.')
-        st.stop()

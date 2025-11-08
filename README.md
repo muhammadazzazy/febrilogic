@@ -401,7 +401,6 @@ To get a local copy up and running follow these simple example steps.
   - [x] Selectbox to choose a patient
   - [x] Button to calculate the disease probabilities for symptoms layer and symptoms+biomarkers layer
   - [x] Ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
-  - [x] Clinical decision support report from LLM
 
 - [x] Add Contact Us page – send support emails
 - [x] Add Privacy Policy page – GDPR privacy policy

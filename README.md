@@ -125,11 +125,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### Installation
 
-1. Get free API keys at
-
-   - [Resend](https://resend.com)
-   - [Groq](https://groq.com)
-   - [OpenRouter](https://openrouter.ai)
+1. Get free API keys at [Resend](https://resend.com)
 
 2. Clone the repo
 

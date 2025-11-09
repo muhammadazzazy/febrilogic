@@ -50,30 +50,6 @@ VERIFICATION_EMAIL_TEMPLATE: Final[Path] = APIS_DIR / Path(
 RESEND_MAX_RETRIES: Final[int] = int(
     os.environ.get('RESEND_MAX_RETRIES', 3))
 
-GROQ_API_KEY: Final[str] = os.environ.get(
-    'GROQ_API_KEY')
-
-GROQ_MODEL: Final[str] = os.environ.get(
-    'GROQ_MODEL', 'llama-3.1-8b-instant')
-
-OPENROUTER_API_KEY: Final[str] = os.environ.get(
-    'OPENROUTER_API_KEY')
-
-OPENROUTER_MODEL: Final[str] = os.environ.get(
-    'OPENROUTER_MODEL', 'openrouter/horizon-beta')
-
-OPENROUTER_URL: Final[str] = os.environ.get(
-    'OPENROUTER_URL')
-
-OPENROUTER_CONNECT_TIMEOUT: Final[int] = int(
-    os.environ.get('OPENROUTER_CONNECT_TIMEOUT', 10))
-
-OPENROUTER_READ_TIMEOUT: Final[int] = int(
-    os.environ.get('OPENROUTER_READ_TIMEOUT', 30))
-
-PROMPT_TEMPLATE: Final[Path] = BASE_DIR / \
-    Path(os.environ.get('PROMPT_TEMPLATE'))
-
 SUPPORT_REQUEST_TEMPLATE: Final[Path] = APIS_DIR / Path(
     os.environ.get('SUPPORT_REQUEST_TEMPLATE'))
 

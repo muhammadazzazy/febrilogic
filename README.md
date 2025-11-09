@@ -88,7 +88,6 @@ FebriLogic is a clinical decision support tool that helps healthcare professiona
 - [![Pydantic][Pydantic]][Pydantic-url]
 - [![Pandas][Pandas]][Pandas-url]
 - [![NumPy][NumPy]][NumPy-url]
-- [![Groq][Groq]][groq-url]
 - [![Resend][Resend]][Resend-url]
 - [![Streamlit][Streamlit]][Streamlit-url]
 
@@ -188,31 +187,6 @@ To get a local copy up and running follow these simple example steps.
 
    # Required file path for the verification email template.
    VERIFICATION_EMAIL_TEMPLATE="html/verification_email.html"
-
-   # Required for generating Groq LLM responses.
-   GROQ_API_KEY=""
-
-   # Optional. Defaults to llama-3.1-8b-instant.
-   GROQ_MODEL="llama-3.1-8b-instant"
-
-   # Required for generating LLM responses.
-   OPENROUTER_API_KEY=""
-
-   # Optional. The model to use for LLM responses. Defaults to openrouter/meta-llama-3.1-8b-instruct.
-   OPENROUTER_MODEL="openrouter/meta-llama-3.1-8b-instruct"
-
-   # Optional. Defaults to https://openrouter.ai/api/v1/chat/completions.
-   OPENROUTER_URL="https://openrouter.ai/api/v1/chat/completions"
-
-   # Optional. Defaults to 10 seconds.
-   OPENROUTER_CONNECT_TIMEOUT=10
-
-   # Optional. Defaults to 30 seconds.
-   OPENROUTER_READ_TIMEOUT=30
-
-   # Required.
-   PROMPT_TEMPLATE_PATH=""
-
    # Required.
    SUPPORT_REQUEST_TEMPLATE="html/support_email.html"
 
@@ -329,11 +303,6 @@ To get a local copy up and running follow these simple example steps.
 
   - [x] GET `/api/biomarkers` - fetch metadata of biomarkers from the `biomarkers` table including the name (if any), abbreviation, standard unit, and reference range of each biomarker
   - [x] GET `/api/biomarkers/units` - fetch a mapping between the biomarker abbreviations and their corresponding units based on data in the `biomarkers`, `units`, and `biomarker_units` tables in the Postgres database
-
-- [x] Implement LLM integration APIs:
-
-  - [x] POST `/api/patient/{id}/generate/groq` - generate a clinical decision support report via Groq LLM
-  - [x] POST `/api/patient/{id}/generate/openrouter` - generate a clinical decision support report via OpenRouter LLM
 
 - [x] Implement utility APIs:
 
@@ -481,8 +450,6 @@ Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/
 [Pandas-url]: https://pandas.pydata.org/
 [NumPy]: https://img.shields.io/badge/numpy-4D77CF?style=for-the-badge&logo=numpy
 [NumPy-url]: https://numpy.org/
-[Groq]: https://img.shields.io/badge/groq-F55036?style=for-the-badge&logo=groq
-[Groq-url]: https://console.groq.com/docs/overview
 [Resend]: https://img.shields.io/badge/resend-000000?style=for-the-badge&logo=resend
 [Resend-url]: https://resend.com
 [Streamlit]: https://img.shields.io/badge/streamlit-FFFFFF?style=for-the-badge&logo=streamlit

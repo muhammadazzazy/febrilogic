@@ -67,7 +67,7 @@ patient_id = st.session_state.get('patient_id')
 if submitted:
     url: str = f'{FAST_API_BASE_URL}/api/patients/{patient_id}/calculate'
     try:
-        with st.spinner('Calculating disease probabilities...'):
+        with st.spinner('Ranking diseases...'):
             response = requests.get(url=url,
                                     headers={
                                         'Authorization': f'Bearer {token}'},
@@ -95,22 +95,17 @@ if submitted:
         'Disease', 'Percentage (%)'])
     symptom_df.sort_values(
         'Percentage (%)', ascending=False, inplace=True)
+    symptom_df.drop(columns=['Percentage (%)'], axis=1, inplace=True)
     symptom_df.index = range(1, len(symptom_df) + 1)
-    symptom_df = symptom_df.head(3)
     combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
         'Disease', 'Percentage (%)'])
     combined_df: DataFrame = combined_df.sort_values(
         'Percentage (%)', ascending=False)
+    combined_df.drop(columns=['Percentage (%)'], axis=1, inplace=True)
     combined_df.index = range(1, len(combined_df) + 1)
-    combined_df = combined_df.head(3)
-    with st.expander('Disease probabilities', expanded=True, icon='📈'):
-        styled_symptom_df: DataFrame = symptom_df.style.format(
-            {"Percentage (%)": "{:.2%}"}).background_gradient(
-            subset=['Percentage (%)'], cmap='Reds')
+    with st.expander('Disease ranking', expanded=True, icon='📈'):
         cols = st.columns(2, gap='medium', border=True)
         cols[0].subheader('After Symptoms')
-        cols[0].dataframe(styled_symptom_df, use_container_width=True)
-        styled_combined_df: DataFrame = combined_df.style.format({'Percentage (%)': '{:.2%}'}).background_gradient(
-            subset=['Percentage (%)'], cmap='Blues')
+        cols[0].dataframe(symptom_df, use_container_width=True)
         cols[1].subheader('After Symptoms + Biomarkers')
-        cols[1].dataframe(styled_combined_df, use_container_width=True)
+        cols[1].dataframe(combined_df, use_container_width=True)

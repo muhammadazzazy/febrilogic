@@ -125,11 +125,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### Installation
 
-1. Get free API keys at
-
-   - [Resend](https://resend.com)
-   - [Groq](https://groq.com)
-   - [OpenRouter](https://openrouter.ai)
+1. Get free API keys at [Resend](https://resend.com)
 
 2. Clone the repo
 
@@ -290,7 +286,6 @@ To get a local copy up and running follow these simple example steps.
 ### FastAPI Backend
 
 - [x] Implement patient data APIs:
-
   - [x] POST `/api/patient/{id}` - add a patient to the `patients` table in the Postgres database
   - [x] GET `/api/patient` - fetch patient information from the `patients` table in the Postgres database
 
@@ -300,12 +295,10 @@ To get a local copy up and running follow these simple example steps.
   - [x] POST `/api/patient/{id}/calculate` - calculate the probabilities of diseases using the symptoms layer and symptoms+biomarkers layer
 
 - [x] Implement biomarker data APIs:
-
   - [x] GET `/api/biomarkers` - fetch metadata of biomarkers from the `biomarkers` table including the name (if any), abbreviation, standard unit, and reference range of each biomarker
   - [x] GET `/api/biomarkers/units` - fetch a mapping between the biomarker abbreviations and their corresponding units based on data in the `biomarkers`, `units`, and `biomarker_units` tables in the Postgres database
 
 - [x] Implement utility APIs:
-
   - [x] GET `/api/countries` - fetch a listing of all countries (alphabetical) from `countries` table in the database
   - [x] GET `/api/diseases` - fetch a listing of all possible diseases a patient can test negative for from `diseases` table in the Postgres database
   - [x] GET `/api/symptoms/categories-definitions` - fetch a mapping between the symptom category, associated symptoms, and their definitions based on the data in the `symptoms` and `symptom_categories` tables in the database
@@ -321,7 +314,6 @@ To get a local copy up and running follow these simple example steps.
 ### Streamlit Frontend
 
 - [x] Add Home page
-
   - [x] Cookie consent dialog
   - [x] Description of what FebriLogic is
   - [x] Note indicating the project’s funding source, academic lead, and university affiliation
@@ -329,35 +321,29 @@ To get a local copy up and running follow these simple example steps.
   - [x] Disclaimer on tool usage
 
 - [x] Add Login/Register page
-
   - [x] Form for user login/registration via email and password
   - [x] Option to reset password after entering email
 
 - [x] Add Reset Password page
-
   - [x] Form for resetting the password when user is locked out of their account via the password reset email and token
   - [x] Form for changing password while user is logged in
 
 - [x] Add Patient Information page
-
   - [x] Selectbox to add a new patient or select an existing patient
   - [x] Form to submit patient info with selectboxes (sex, race, and country), optional text field for city, and number field for age
   - [x] Reset button to clear all fields
 
 - [x] Add Disease-Specific Tests page
-
   - [x] Selectbox to choose a patient
   - [x] Form containing checkboxes for diseases and submit button to add diseases the patient tested negative for
   - [x] Reset button to clear disease checkboxes
 
 - [x] Add Symptom Checker page
-
   - [x] Selectbox to choose a patient
   - [x] Form containing checkboxes for symptoms and submit button
   - [x] Reset button to clear symptom checkboxes
 
 - [x] Add Biomarkers page
-
   - [x] Selectbox to choose a patient
   - [x] Checkbox for each biomarker indicating whether it was measured
   - [x] Box for each biomarker to capture its value
@@ -366,10 +352,9 @@ To get a local copy up and running follow these simple example steps.
   - [x] Reset button to clear biomarker checkboxes
 
 - [x] Add Results page
-
   - [x] Selectbox to choose a patient
   - [x] Button to calculate the disease probabilities for symptoms layer and symptoms+biomarkers layer
-  - [x] Ranked diseases with probabilities for symptoms layer and symptoms + biomarkers layer
+  - [x] Ranked diseases for symptoms layer and symptoms+biomarkers layer
 
 - [x] Add Contact Us page – send support emails
 - [x] Add Privacy Policy page – GDPR privacy policy

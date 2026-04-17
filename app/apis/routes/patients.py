@@ -19,7 +19,7 @@ from apis.routes.auth import get_current_user
 from apis.services.biomarkers import fetch_biomarker_stats, fetch_biomarker_catalog
 from apis.services.diseases import fetch_diseases
 from apis.services.symptoms import fetch_symptom_ids
-from apis.tools.afi_model import calculate_probabilities
+from apis.tools.afi_model import calculate_mean_confidence_intervals
 
 api_router: APIRouter = APIRouter(
     prefix='/api/patients'
@@ -275,20 +275,18 @@ def calculate(patient_id: int, user: Annotated[dict[str, str | int], Depends(get
     biomarker_row: dict[str, float] = {
         row.abbreviation: row.value for row in biomarker_result}
 
-    calculated_probs = calculate_probabilities(
-        negative_diseases=negative_diseases,
-        positive_symptoms=positive_symptoms,
-        biomarker_row=biomarker_row,
-        biomarker_df=biomarker_df
-    )
+    print(biomarker_row)
 
-    sym_probs = calculated_probs.get('symptom_probabilities', [])
-    bio_probs = calculated_probs.get('symptom_biomarker_probabilities', [])
+    results = calculate_mean_confidence_intervals(
+        negative_diseases=negative_diseases,
+        patient_symptoms=positive_symptoms,
+        patient_biomarkers=biomarker_row,
+        biomarker_stats_df=biomarker_df
+    )
 
     return {
         'negative_diseases': negative_diseases,
         'symptoms': positive_symptoms,
         'biomarkers': biomarker_row,
-        'symptom_probabilities': sym_probs,
-        'symptom_biomarker_probabilities': bio_probs
+        'results': results
     }

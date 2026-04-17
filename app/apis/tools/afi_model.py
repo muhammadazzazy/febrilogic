@@ -1,141 +1,540 @@
 """AFI model for disease diagnosis using symptoms and biomarkers."""
-import csv
-import math
 from typing import Any
 
+import csv
 import numpy as np
 import pandas as pd
-from pandas import DataFrame
 from scipy.stats import norm
 
 from apis.config import SYMPTOM_WEIGHTS_FILE
 
 
-def calculate_probabilities(negative_diseases: list[str], positive_symptoms: list[str],
-                            biomarker_row: dict[str, float], biomarker_df: DataFrame) -> dict[str, Any]:
-    """Calculate disease probabilities based on symptoms and biomarkers."""
-    diseases, symptoms = load_disease_data(negative_diseases)
-
-    disease_scores = calculate_disease_scores(diseases=diseases, symptoms=symptoms,
-                                              positive_symptoms=positive_symptoms)
-    disease_sums = {disease: sum(scores)
-                    for disease, scores in disease_scores.items()}
-    disease_names: list[str] = list(disease_sums.keys())
-    disease_values: list[float] = list(disease_sums.values())
-    prior_probs = softmax(disease_values)
-    sym_probs = list(zip(disease_names, prior_probs))
-    sym_probs_expanded = expand_diseases_for_severity(sym_probs)
-    sym_probs_expanded = sorted(
-        sym_probs_expanded, key=lambda x: x[1], reverse=True)
-    if biomarker_row:
-        bio_probs_vals = update_with_all_biomarkers(
-            [d for d, _ in sym_probs_expanded],
-            [p for _, p in sym_probs_expanded],
-            biomarker_df,
-            biomarker_row
-        )
-        bio_probs = list(
-            zip([d for d, _ in sym_probs_expanded], bio_probs_vals))
-    else:
-        bio_probs = sym_probs_expanded.copy()
-    bio_probs = sorted(bio_probs, key=lambda x: x[1], reverse=True)
+def disease_to_biomarker_row_name(display_name):
+    """Map symptom-layer disease names to `disease` column in biomarker stats CSV."""
+    n = display_name.strip().lower()
     return {
-        'symptom_probabilities': sym_probs_expanded,
-        'symptom_biomarker_probabilities': bio_probs
-    }
+        "dengue fever severe": "Dengue (severe)",
+        "dengue fever non-severe": "Dengue (non-severe)",
+        "dengue fever": "Dengue (non-severe)",
+        "yellow fever severe": "Yellow fever (severe)",
+        "yellow fever non-severe": "Yellow fever",
+        "yellow fever": "Yellow fever",
+        "malaria": "Malaria",
+        "leptospirosis": "Leptospirosis",
+        "typhoid": "Typhoid",
+        "enteric fever": "Typhoid",
+        "viral hepatitis": "Viral Hepatitis",
+        "influenza": "Influenza",
+        "spotted fever group": "Spotted fever group",
+        "spotted fever": "Spotted fever group",
+        "scrub typhus": "Scrub typhus",
+        "chikungunia": "Chikungunia",
+        "chikungunya": "Chikungunia",
+    }.get(n)
 
 
-def softmax(x: list[float]) -> list[float]:
-    """Return list of probabilities from a list of scores using softmax."""
-    exp_x = [math.exp(score) for score in x]
-    sum_exp_x = sum(exp_x)
-    return [exp / sum_exp_x for exp in exp_x]
+def get_biomarker_stats_row(df, bio_key):
+    """First exact match on disease, then case-insensitive match."""
+    if bio_key is None or (isinstance(bio_key, str) and not bio_key.strip()):
+        return None
+    key = str(bio_key).strip()
+    row = df[df["disease"].astype(str).str.strip() == key]
+    if not row.empty:
+        return row.iloc[0]
+    kl = key.lower()
+    row = df[df["disease"].astype(str).str.strip().str.lower() == kl]
+    if not row.empty:
+        return row.iloc[0]
+    return None
 
 
-def calculate_disease_scores(*, diseases: dict[str, dict[str, float]], symptoms: list[str],
-                             positive_symptoms: list[str]) -> dict[str, float]:
-    """Return scores for each disease based on positive symptoms."""
-    disease_scores = {d: [] for d in diseases}
-    for symptom in symptoms:
-        for disease_name, disease_data in diseases.items():
-            weight = disease_data[symptom]
-            if symptom in positive_symptoms:
-                disease_scores[disease_name].append(weight)
-    return disease_scores
+def label_matches(true_label: str, predicted: str) -> bool:
+    """
+    True if ground-truth label matches a model disease string (lowercase names).
+    Handles canonical_label aliases vs expanded AHP names (e.g. typhoid vs enteric fever).
+    """
+    tl = (true_label or '').strip().lower()
+    pl = (predicted or '').strip().lower()
+    if not tl or not pl:
+        return False
+    if tl == pl:
+        return True
+    synonym_groups = (
+        frozenset({"typhoid", "enteric fever"}),
+        frozenset({"spotted fever group", "spotted fever"}),
+        frozenset({"dengue fever", "dengue fever severe",
+                  "dengue fever non-severe"}),
+        frozenset({"yellow fever", "yellow fever severe",
+                  "yellow fever non-severe"}),
+    )
+    for g in synonym_groups:
+        if tl in g and pl in g:
+            return True
+    return False
 
 
-def load_disease_data(negative_diseases: list[str]) \
-        -> tuple[dict[str, dict[str, float]], list[str]]:
-    """Load disease and symptom data from a CSV file."""
-    diseases: dict[str, dict[str, float]] = {}
-    symptoms: list[str] = []
-    with open(SYMPTOM_WEIGHTS_FILE, mode='r', encoding='utf-8') as file:
-        reader = csv.DictReader(file)
+def softmax_columns(scores):
+    """scores: (n_diseases, n_iter). Softmax down rows for each column."""
+    s = np.asarray(scores, dtype=float)
+    mx = np.max(s, axis=0, keepdims=True)
+    e = np.exp(s - mx)
+    return e / np.sum(e, axis=0, keepdims=True)
+
+
+def load_mc_symptom_weights(csv_path, negative_diseases):
+    """
+    Monte Carlo AHP weights: columns disease | iteration | symptom1 | ...
+    Returns:
+      disease_names: list of base disease names (order used in matrices)
+      symptoms: list of symptom column names
+      weights_by_disease: dict disease -> DataFrame (n_iter rows × symptoms)
+      n_iter: int
+    """
+    diseases = {}
+    symptoms = []
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        symptoms = [c for c in fieldnames if c not in ("disease", "iteration")]
         for row in reader:
-            disease_name = row['disease'].strip().title()
-            # Skip patient's negative diseases
+            disease_name = row['disease'].strip()
             if disease_name in negative_diseases:
                 continue
-            diseases[disease_name] = {}
-            if not symptoms:
-                symptoms = [col for col in row.keys() if col != 'disease']
-            for symptom in symptoms:
-                diseases[disease_name][symptom] = float(row[symptom])
-    return diseases, symptoms
+            if disease_name not in diseases:
+                diseases[disease_name] = []
+            rec = {s: float(row[s]) for s in symptoms}
+            rec["iteration"] = int(float(row["iteration"]))
+            diseases[disease_name].append(rec)
+
+    disease_names = sorted(diseases.keys())
+    n_iter = len(diseases[disease_names[0]]) if disease_names else 0
+    weights_by_disease = {}
+    for d in disease_names:
+        rows = diseases[d]
+        rows.sort(key=lambda r: r['iteration'])
+        weights_by_disease[d] = pd.DataFrame(
+            [{k: r[k] for k in symptoms} for r in rows])
+
+    return disease_names, symptoms, weights_by_disease, n_iter
 
 
-def expand_diseases_for_severity(disease_probabilities):
-    """Expand dengue/yellow fever to severe/non-severe (duplicate their probabilities)."""
-    expanded = []
-    for d, p in disease_probabilities:
-        if d.lower() == "dengue fever":
-            expanded.append(("dengue fever severe", p))
-            expanded.append(("dengue fever non-severe", p))
-        elif d.lower() == "yellow fever":
-            expanded.append(("yellow fever severe", p))
-            expanded.append(("yellow fever non-severe", p))
+def load_legacy_symptom_weights(csv_path, negative_diseases, n_replicates=500):
+    """
+    Original AHP table: columns disease | symptom1 | symptom2 | ... (no iteration).
+    Same weights repeated n_replicates times → deterministic softmax each column
+    (mean == point estimate; 95% CI width ~ 0 unless you add an MC file with iteration).
+    """
+    diseases = {}
+    symptoms = []
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        symptoms = [c for c in fieldnames if c != "disease"]
+        for row in reader:
+            disease_name = row['disease'].strip()
+            if disease_name in negative_diseases:
+                continue
+            diseases[disease_name] = {s: float(row[s]) for s in symptoms}
+    disease_names = sorted(diseases.keys())
+    weights_by_disease = {}
+    for d in disease_names:
+        base = diseases[d]
+        mat = np.tile(
+            np.array([base[s] for s in symptoms], dtype=float), (n_replicates, 1))
+        weights_by_disease[d] = pd.DataFrame(mat, columns=symptoms)
+    return disease_names, symptoms, weights_by_disease, n_replicates
+
+
+def load_symptom_weights_auto(csv_path, negative_diseases, n_replicates=500):
+    """MC format (disease + iteration + symptoms) or legacy (disease + symptoms only)."""
+    with open(csv_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        fieldnames = list(reader.fieldnames or [])
+    if "iteration" in fieldnames:
+        return load_mc_symptom_weights(csv_path, negative_diseases)
+    return load_legacy_symptom_weights(csv_path, negative_diseases, n_replicates=n_replicates)
+
+
+def symptom_value_is_positive(raw) -> bool:
+    if raw is None or (isinstance(raw, float) and np.isnan(raw)):
+        return False
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        return raw == 1
+    value = str(raw).lower().strip()
+    return value in ("yes", "y", "1", "true")
+
+
+def merge_patient_symptom_values(a, b):
+    """If two raw columns map to the same weight symptom, treat as positive if either is positive."""
+    if symptom_value_is_positive(a) or symptom_value_is_positive(b):
+        return 1
+    return a if a is not None else b
+
+
+def extend_weights_for_patient_symptoms(
+    weights_by_disease, disease_names, symptoms, patient_extra_symptoms
+):
+    """
+    Add missing symptom columns with weight 0 so patient positives are not ignored
+    when the column exists in patient data but not in the weight table.
+    """
+    all_symptoms = sorted(set(symptoms) | set(patient_extra_symptoms))
+    if set(all_symptoms) == set(symptoms):
+        return symptoms, weights_by_disease
+    for d in disease_names:
+        df = weights_by_disease[d]
+        for s in all_symptoms:
+            if s not in df.columns:
+                df[s] = 0.0
+        weights_by_disease[d] = df[[c for c in all_symptoms]]
+    return all_symptoms, weights_by_disease
+
+
+def symptom_raw_scores_mc(disease_names, symptoms, weights_by_disease, positive_symptoms, n_iter):
+    """
+    Pre-softmax AHP scores: for each MC column, sum of weights over positive symptoms per disease.
+    Shape (n_base_diseases, n_iter). Ranking by mean(score) matches majority vote of per-draw argmax
+    (softmax is monotone). Mean(softmax(p)) ranking does not — it was collapsing symptom accuracy.
+    """
+    n_d = len(disease_names)
+    scores = np.zeros((n_d, n_iter))
+    pos_set = set(positive_symptoms)
+    for i, d in enumerate(disease_names):
+        wdf = weights_by_disease[d]
+        if not pos_set:
+            scores[i, :] = 0.0
         else:
-            expanded.append((d, p))
-    return expanded
-
-
-def update_with_all_biomarkers(disease_names, priors, df, biomarker_row):
-    """Update probabilities using all available biomarkers."""
-    biomarker_names = sorted([
-        col.replace('pooled_mean_', '')
-        for col in df.columns if col.startswith('pooled_mean_')
-    ])
-    posteriors = np.array(priors)
-    for biomarker in biomarker_names:
-        means = df[f'pooled_mean_{biomarker}']
-        sds = df[f'pooled_sd_{biomarker}']
-        if means.isnull().all() or sds.isnull().all():
-            continue
-        # Only update if patient provided a value
-        if biomarker not in biomarker_row:
-            continue
-        observed = biomarker_row[biomarker]
-        likelihoods = []
-        for _, disease in enumerate(disease_names):
-            row = df[df['disease'] == disease]
-            if row.empty:
-                likelihood = 1.0
+            use_cols = [
+                c for c in symptoms if c in pos_set and c in wdf.columns]
+            if not use_cols:
+                scores[i, :] = 0.0
             else:
-                mean = row[f'pooled_mean_{biomarker}'].values[0]
-                sd = row[f'pooled_sd_{biomarker}'].values[0]
-                if pd.isnull(mean) or pd.isnull(sd) or not np.isfinite(mean) or not np.isfinite(sd) or sd <= 0:
-                    likelihood = 1.0
-                else:
-                    likelihood = norm.pdf(
-                        observed, loc=float(mean), scale=float(sd))
-                    if not np.isfinite(likelihood) or likelihood <= 0:
-                        likelihood = 1e-5
-            likelihoods.append(likelihood)
-        likelihoods = np.array(likelihoods)
-        posteriors *= likelihoods
-        s = posteriors.sum()
-        if not np.isfinite(s) or s == 0:
-            posteriors = np.array(priors)
+                scores[i, :] = wdf[use_cols].sum(axis=1).values.astype(float)
+    return scores
+
+
+def symptom_probabilities_mc(disease_names, symptoms, weights_by_disease, positive_symptoms, n_iter):
+    """
+    For each MC iteration, sum weights over positive symptoms per disease, softmax across diseases.
+    Returns probs_sym: (n_base_diseases, n_iter).
+    """
+    scores = symptom_raw_scores_mc(
+        disease_names, symptoms, weights_by_disease, positive_symptoms, n_iter
+    )
+    return softmax_columns(scores)
+
+
+def expand_probability_matrix(base_names, probs_base):
+    """
+    probs_base: (n_base, n_iter)
+    Returns expanded names (length n_exp) and probs (n_exp, n_iter).
+
+    Used for biomarker likelihood updates only. Symptom-only outputs use base_names
+    (no dengue/yellow severity duplication) to avoid duplicate softmax rows in tables.
+    """
+    n_iter = probs_base.shape[1]
+    col_names = []
+    col_slices = []
+    for i, d in enumerate(base_names):
+        dl = d.strip().lower()
+        pcol = probs_base[i, :]
+        if dl == "dengue fever":
+            col_names.extend(
+                ["dengue fever severe", "dengue fever non-severe"])
+            col_slices.append(pcol)
+            col_slices.append(pcol.copy())
+        elif dl == "yellow fever":
+            col_names.extend(
+                ["yellow fever severe", "yellow fever non-severe"])
+            col_slices.append(pcol)
+            col_slices.append(pcol.copy())
+        else:
+            col_names.append(d)
+            col_slices.append(pcol)
+    probs_exp = np.vstack(col_slices) if col_slices else np.zeros((0, n_iter))
+    return col_names, probs_exp
+
+
+def update_with_all_biomarkers_mc(
+    disease_names_expanded, priors_mc, biomarker_stats_df, biomarker_row
+):
+    """
+    priors_mc: (n_diseases, n_iter). For each iteration column, multiply by Gaussian likelihoods and normalize.
+    """
+    biomarker_names = sorted(
+        col.replace("pooled_mean_", "")
+        for col in biomarker_stats_df.columns
+        if col.startswith("pooled_mean_")
+    )
+    df = biomarker_stats_df
+    posteriors = np.array(priors_mc, dtype=float, copy=True)
+    n_iter = posteriors.shape[1]
+
+    for biomarker in biomarker_names:
+        if posteriors.size == 0:
             break
-        posteriors /= s
+        means_col = f"pooled_mean_{biomarker}"
+        sds_col = f"pooled_sd_{biomarker}"
+        if means_col not in df.columns or sds_col not in df.columns:
+            continue
+        if biomarker not in biomarker_row or str(biomarker_row.get(biomarker, "")).strip() in (
+            "",
+            "NA",
+            "nan",
+            "None",
+        ):
+            continue
+        try:
+            observed = float(biomarker_row[biomarker])
+        except (TypeError, ValueError):
+            continue
+
+        likelihood_matrix = np.ones((len(disease_names_expanded), n_iter))
+        for i, display_name in enumerate(disease_names_expanded):
+            bio_key = disease_to_biomarker_row_name(display_name)
+            if bio_key is None:
+                bio_key = display_name.strip()
+            row = get_biomarker_stats_row(df, bio_key)
+            if row is None:
+                likelihood_matrix[i, :] = 1.0
+                continue
+            mean = row[means_col]
+            sd = row[sds_col]
+            if (
+                pd.isna(mean)
+                or pd.isna(sd)
+                or not np.isfinite(mean)
+                or not np.isfinite(sd)
+                or sd <= 0
+            ):
+                likelihood_matrix[i, :] = 1.0
+            else:
+                lik = norm.pdf(observed, loc=float(mean), scale=float(sd))
+                if not np.isfinite(lik) or lik <= 0:
+                    lik = 1e-5
+                likelihood_matrix[i, :] = lik
+
+        posteriors *= likelihood_matrix
+        col_sums = posteriors.sum(axis=0, keepdims=True)
+        bad = ~np.isfinite(col_sums) | (col_sums == 0)
+        if np.any(bad):
+            posteriors = np.array(priors_mc, dtype=float, copy=True)
+            break
+        posteriors /= col_sums
+
     return posteriors
+
+
+def aggregate_mc(probs):
+    """probs: (n_diseases, n_iter). Returns mean, p2.5, p97.5 per disease (each length n_diseases)."""
+    if probs.size == 0:
+        return np.array([]), np.array([]), np.array([])
+    m = np.mean(probs, axis=1)
+    lo = np.percentile(probs, 2.5, axis=1)
+    hi = np.percentile(probs, 97.5, axis=1)
+    return m, lo, hi
+
+
+def fraction_to_percent_csv(x):
+    """Convert a probability in [0, 1] to percent for CSV columns (matches CI columns scaled *100)."""
+    if x is None or x == "":
+        return ""
+    try:
+        v = float(x)
+        if not np.isfinite(v):
+            return ""
+        return v * 100.0
+    except (TypeError, ValueError):
+        return ""
+
+
+def rank_by_mean(names, mean_probs):
+    order = np.argsort(-mean_probs)
+    return [(names[i], float(mean_probs[i])) for i in order]
+
+
+def cohort_accuracy_per_iteration(probs, exp_names, true_label):
+    """
+    For each MC column, compute whether the true label matches top-1 / top-2 / top-3
+    by that iteration's probability vector (not by mean across iterations).
+
+    probs: (n_diseases, n_iter)
+    Returns three vectors of length n_iter with values 0 or 1.
+    """
+    if probs.size == 0:
+        return np.array([]), np.array([]), np.array([])
+    n_exp, n_iter = probs.shape
+    if n_exp == 0:
+        return np.zeros(n_iter), np.zeros(n_iter), np.zeros(n_iter)
+    tl = (true_label or "").strip().lower()
+    c1 = np.zeros(n_iter)
+    c2 = np.zeros(n_iter)
+    c3 = np.zeros(n_iter)
+    for j in range(n_iter):
+        order = np.argsort(-probs[:, j])
+        names_j = [exp_names[i].strip().lower() for i in order[:3]]
+        while len(names_j) < 3:
+            names_j.append("")
+        t1, t2, t3 = names_j[0], names_j[1], names_j[2]
+        c1[j] = 1.0 if label_matches(true_label, t1) else 0.0
+        c2[j] = 1.0 if any(label_matches(true_label, x)
+                           for x in (t1, t2)) else 0.0
+        c3[j] = 1.0 if any(label_matches(true_label, x)
+                           for x in (t1, t2, t3)) else 0.0
+    return c1, c2, c3
+
+
+def fraction_mc_draws_true_in_topk_base(
+    probs_base, disease_names, true_label, k: int
+) -> float:
+    """
+    Fraction of MC iterations where the true label is in the top-k diseases (base layer,
+    softmax probs). Often >0 even when mean-ranking top-k is wrong — reports how often
+    the label appears in the running classifier each draw.
+    """
+    if probs_base.size == 0:
+        return 0.0
+    tl = (true_label or "").strip()
+    if not tl:
+        return 0.0
+    n_iter = probs_base.shape[1]
+    hits = 0
+    for j in range(n_iter):
+        order = np.argsort(-probs_base[:, j])
+        for i in range(min(k, len(order))):
+            name = disease_names[int(order[i])].strip().lower()
+            if label_matches(tl, name):
+                hits += 1
+                break
+    return hits / n_iter if n_iter else 0.0
+
+
+def summarize_accuracy_distribution(acc_per_iter):
+    """acc_per_iter: cohort accuracy per MC iteration. Returns mean and 95% empirical bounds."""
+    a = np.asarray(acc_per_iter, dtype=float)
+    if a.size == 0:
+        return float("nan"), float("nan"), float("nan")
+    return (
+        float(np.mean(a)),
+        float(np.percentile(a, 2.5)),
+        float(np.percentile(a, 97.5)),
+    )
+
+
+def calculate_mean_confidence_intervals(
+        negative_diseases: list[str],
+        patient_symptoms: list[str],
+        patient_biomarkers: dict[str, float],
+        biomarker_stats_df) -> dict[str, Any]:
+    """"""
+    disease_names, symptoms, weights_by_disease, n_iter = load_symptom_weights_auto(
+        csv_path=SYMPTOM_WEIGHTS_FILE, negative_diseases=negative_diseases)
+    biomarker_stats_df["disease"] = biomarker_stats_df["disease"].astype(
+        str).str.strip()
+
+    symptoms, weights_by_disease = extend_weights_for_patient_symptoms(
+        weights_by_disease, disease_names, symptoms, patient_symptoms
+    )
+    sum_sym_c1 = np.zeros(n_iter)
+    sum_sym_c2 = np.zeros(n_iter)
+    sum_sym_c3 = np.zeros(n_iter)
+    sum_bio_c1 = np.zeros(n_iter)
+    sum_bio_c2 = np.zeros(n_iter)
+    sum_bio_c3 = np.zeros(n_iter)
+
+    scores_sym_base = symptom_raw_scores_mc(
+        disease_names, symptoms, weights_by_disease, patient_symptoms, n_iter
+    )
+    probs_sym_base = softmax_columns(scores_sym_base)
+    exp_names, probs_sym_exp = expand_probability_matrix(
+        disease_names, probs_sym_base)
+
+    mean_s_base, lo_s_base, hi_s_base = aggregate_mc(probs_sym_base)
+    mean_s, lo_s, hi_s = mean_s_base, lo_s_base, hi_s_base
+    mean_raw_base = np.mean(scores_sym_base, axis=1)
+    order_base = np.argsort(-mean_raw_base)
+    i_top = int(order_base[0]) if len(order_base) > 0 else 0
+    top_disease_symptoms = disease_names[i_top] if disease_names else ""
+    top_mean_sym = float(mean_s_base[i_top]) if len(
+        mean_s_base) > i_top else float("nan")
+
+    symptoms_top1 = (
+        disease_names[order_base[0]].strip().lower() if len(
+            order_base) > 0 else None
+    )
+    symptoms_top2 = (
+        disease_names[order_base[1]].strip().lower() if len(
+            order_base) > 1 else None
+    )
+    symptoms_top3 = (
+        disease_names[order_base[2]].strip().lower() if len(
+            order_base) > 2 else None
+    )
+
+    if patient_biomarkers:
+        priors_bio = np.array(probs_sym_exp, dtype=float, copy=True)
+        probs_bio = update_with_all_biomarkers_mc(
+            exp_names, priors_bio, biomarker_stats_df, patient_biomarkers
+        )
+    else:
+        probs_bio = np.array(probs_sym_exp, dtype=float, copy=True)
+
+    s1, s2, s3 = cohort_accuracy_per_iteration(
+        probs_sym_base, disease_names, ""
+    )
+    sym_frac_top1 = fraction_mc_draws_true_in_topk_base(
+        probs_sym_base, disease_names, "", 1
+    )
+    sym_frac_top3 = fraction_mc_draws_true_in_topk_base(
+        probs_sym_base, disease_names, "", 3
+    )
+    b1, b2, b3 = cohort_accuracy_per_iteration(
+        probs_bio, exp_names, "")
+    sum_sym_c1 += s1
+    sum_sym_c2 += s2
+    sum_sym_c3 += s3
+    sum_bio_c1 += b1
+    sum_bio_c2 += b2
+    sum_bio_c3 += b3
+
+    mean_b, lo_b, hi_b = aggregate_mc(probs_bio)
+    bio_ranked = rank_by_mean(exp_names, mean_b)
+    top_disease_biomarkers = bio_ranked[0][0] if bio_ranked else ""
+    top_mean_bio = bio_ranked[0][1] if bio_ranked else float("nan")
+
+    order_b = np.argsort(-mean_b)
+    biomarkers_top1 = exp_names[order_b[0]].strip(
+    ).lower() if len(order_b) > 0 else None
+    biomarkers_top2 = exp_names[order_b[1]].strip(
+    ).lower() if len(order_b) > 1 else None
+    biomarkers_top3 = exp_names[order_b[2]].strip(
+    ).lower() if len(order_b) > 2 else None
+    result = {
+        'positive_symptoms': len(patient_symptoms),
+        'symptoms_top1': symptoms_top1,
+        'symptoms_top2': symptoms_top2,
+        'symptoms_top3': symptoms_top3,
+        'biomarkers_top1': biomarkers_top1,
+        'biomarkers_top2': biomarkers_top2,
+        'biomarkers_top3': biomarkers_top3,
+        'top_diagnosis_symptoms': top_disease_symptoms,
+        'top_probability_symptoms_mean': top_mean_sym,
+        'top_diagnosis_biomarkers': top_disease_biomarkers,
+        'top_probability_biomarkers_mean': top_mean_bio,
+        'symptom_mc_names_base': list(disease_names),
+        'symptom_base_mean': dict(zip(disease_names, mean_s_base)),
+        'symptom_base_mean_raw': dict(zip(disease_names, mean_raw_base)),
+        'symptom_base_ci_low': dict(zip(disease_names, lo_s_base)),
+        'symptom_base_ci_high': dict(zip(disease_names, hi_s_base)),
+        'symptom_mc_frac_draws_true_top1': sym_frac_top1,
+        'symptom_mc_frac_draws_true_top3': sym_frac_top3,
+        'symptom_mc_names_expanded': list(disease_names),
+        'symptom_mean': dict(zip(disease_names, mean_s)),
+        'symptom_ci_low': dict(zip(disease_names, lo_s)),
+        'symptom_ci_high': dict(zip(disease_names, hi_s)),
+        'biomarker_mc_names_expanded': list(exp_names),
+        'biomarker_mean': dict(zip(exp_names, mean_b)),
+        'biomarker_ci_low': dict(zip(exp_names, lo_b)),
+        'biomarker_ci_high': dict(zip(exp_names, hi_b)),
+    }
+    return result

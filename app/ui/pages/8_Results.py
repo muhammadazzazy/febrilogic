@@ -120,11 +120,14 @@ if submitted:
     symptom_df.drop(columns=['Mean', 'Confidence Interval (Low)',
                     'Confidence Interval (High)'], axis=1, inplace=True)
 
+    biomarker_df.index = biomarker_df.index.str.replace(
+        r'(Severe|Non-Severe)$', r'(\1)', regex=True)
     biomarker_df.reset_index(inplace=True)
     biomarker_df.rename(columns={'index': 'Disease'}, inplace=True)
     biomarker_df.sort_values(
         'Mean', ascending=False, inplace=True
     )
+
     biomarker_df.index = range(1, len(biomarker_df) + 1)
     biomarker_df.drop(
         columns=['Mean', 'Confidence Interval (Low)',

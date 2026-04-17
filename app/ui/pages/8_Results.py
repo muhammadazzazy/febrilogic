@@ -105,12 +105,6 @@ if submitted:
         'Confidence Interval (Low)': symptom_ci_low,
         'Confidence Interval (High)': symptom_ci_high
     })
-    biomarker_df: DataFrame = DataFrame({
-        'Mean': biomarker_avg,
-        'Confidence Interval (Low)': biomarker_conf_int_low,
-        'Confidence Interval (High)': biomarker_conf_int_high
-    })
-
     symptom_df.reset_index(inplace=True)
     symptom_df.rename(columns={'index': 'Disease'}, inplace=True)
     symptom_df.sort_values(
@@ -120,6 +114,11 @@ if submitted:
     symptom_df.drop(columns=['Mean', 'Confidence Interval (Low)',
                     'Confidence Interval (High)'], axis=1, inplace=True)
 
+    biomarker_df: DataFrame = DataFrame({
+        'Mean': biomarker_avg,
+        'Confidence Interval (Low)': biomarker_conf_int_low,
+        'Confidence Interval (High)': biomarker_conf_int_high
+    })
     biomarker_df.index = biomarker_df.index.str.replace(
         r'(Severe|Non-Severe)$', r'(\1)', regex=True)
     biomarker_df.reset_index(inplace=True)

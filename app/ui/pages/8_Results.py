@@ -3,6 +3,7 @@ import time
 from typing import Any
 
 import requests
+import math
 import streamlit as st
 from requests.exceptions import HTTPError
 from pandas import DataFrame
@@ -12,7 +13,6 @@ from config import (
     FAST_API_BASE_URL, FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT,
     FEBRILOGIC_LOGO
 )
-
 
 st.set_page_config(
     page_title='Results',
@@ -73,39 +73,67 @@ if submitted:
                                         'Authorization': f'Bearer {token}'},
                                     timeout=(FAST_API_CONNECT_TIMEOUT, FAST_API_READ_TIMEOUT))
             response.raise_for_status()
-        symptom_probabilities = response.json().get('symptom_probabilities', [])
-        symp_prob: dict[str, float] = {}
-        for i, symptom_probability in enumerate(symptom_probabilities):
-            symptom_probabilities[i][0] = symptom_probability[0].title()
-            symptom_probabilities[i][0] = symptom_probabilities[i][0].replace(
-                'Non-Severe', '').replace(
-                'Severe', '')
-            symp_prob[symptom_probability[0]] = symptom_probability[1]
+        results = response.json().get('results', {})
 
-        biomarker_probabilities = response.json().get(
-            'symptom_biomarker_probabilities', [])
-        for i, biomarker_probability in enumerate(biomarker_probabilities):
-            biomarker_probabilities[i][0] = biomarker_probability[0].title()
+        symptom_mean: dict[str, Any] = results.get('symptom_mean', {})
+        symptom_ci_low: dict[str, Any] = results.get('symptom_ci_low', {})
+        symptom_ci_high: dict[str, Any] = results.get('symptom_ci_high', {})
+
+        biomarker_mean: dict[str, Any] = results.get('biomarker_mean', {})
+        biomarker_ci_low: dict[str, Any] = results.get('biomarker_ci_low', {})
+        biomarker_ci_high: dict[str, Any] = results.get(
+            'biomarker_ci_high', {})
+        biomarker_avg: dict[str, Any] = {}
+        biomarker_conf_int_low: dict[str, Any] = {}
+        biomarker_conf_int_high: dict[str, Any] = {}
+        for key, mean, ci_low, ci_high in zip(
+                biomarker_mean.keys(),
+                biomarker_mean.values(),
+                biomarker_ci_low.values(),
+                biomarker_ci_high.values()):
+            biomarker_avg[key.title()] = mean
+            biomarker_conf_int_low[key.title()] = ci_low
+            biomarker_conf_int_high[key.title()] = ci_high
+
     except requests.exceptions.ConnectionError:
         st.error('Please check your internet connection or try again later.')
         st.stop()
 
 if submitted:
-    symptom_df: DataFrame = DataFrame(symp_prob.items(), columns=[
-        'Disease', 'Percentage (%)'])
+    symptom_df: DataFrame = DataFrame({
+        'Mean': symptom_mean,
+        'Confidence Interval (Low)': symptom_ci_low,
+        'Confidence Interval (High)': symptom_ci_high
+    })
+    biomarker_df: DataFrame = DataFrame({
+        'Mean': biomarker_avg,
+        'Confidence Interval (Low)': biomarker_conf_int_low,
+        'Confidence Interval (High)': biomarker_conf_int_high
+    })
+
+    symptom_df.reset_index(inplace=True)
+    symptom_df.rename(columns={'index': 'Disease'}, inplace=True)
     symptom_df.sort_values(
-        'Percentage (%)', ascending=False, inplace=True)
-    symptom_df.drop(columns=['Percentage (%)'], axis=1, inplace=True)
+        by='Mean', ascending=False, inplace=True
+    )
     symptom_df.index = range(1, len(symptom_df) + 1)
-    combined_df: DataFrame = DataFrame(biomarker_probabilities, columns=[
-        'Disease', 'Percentage (%)'])
-    combined_df: DataFrame = combined_df.sort_values(
-        'Percentage (%)', ascending=False)
-    combined_df.drop(columns=['Percentage (%)'], axis=1, inplace=True)
-    combined_df.index = range(1, len(combined_df) + 1)
+    symptom_df.drop(columns=['Mean', 'Confidence Interval (Low)',
+                    'Confidence Interval (High)'], axis=1, inplace=True)
+
+    biomarker_df.reset_index(inplace=True)
+    biomarker_df.rename(columns={'index': 'Disease'}, inplace=True)
+    biomarker_df.sort_values(
+        'Mean', ascending=False, inplace=True
+    )
+    biomarker_df.index = range(1, len(biomarker_df) + 1)
+    biomarker_df.drop(
+        columns=['Mean', 'Confidence Interval (Low)',
+                 'Confidence Interval (High)'], axis=1, inplace=True
+    )
+
     with st.expander('Disease ranking', expanded=True, icon='📈'):
         cols = st.columns(2, gap='medium', border=True)
         cols[0].subheader('After Symptoms')
-        cols[0].dataframe(symptom_df, use_container_width=True)
+        cols[0].dataframe(symptom_df, use_container_width=True, )
         cols[1].subheader('After Symptoms + Biomarkers')
-        cols[1].dataframe(combined_df, use_container_width=True)
+        cols[1].dataframe(biomarker_df, use_container_width=True)

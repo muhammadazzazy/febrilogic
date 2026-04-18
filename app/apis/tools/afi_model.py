@@ -41,11 +41,11 @@ def get_biomarker_stats_row(df: pd.DataFrame, bio_key: str) -> pd.Series | None:
     if bio_key is None or (isinstance(bio_key, str) and not bio_key.strip()):
         return None
     key = str(bio_key).strip()
-    row = df[df["disease"].astype(str).str.strip() == key]
+    row = df[df['disease'].astype(str).str.strip() == key]
     if not row.empty:
         return row.iloc[0]
     kl = key.lower()
-    row = df[df["disease"].astype(str).str.strip().str.lower() == kl]
+    row = df[df['disease'].astype(str).str.strip().str.lower() == kl]
     if not row.empty:
         return row.iloc[0]
     return None
@@ -265,9 +265,9 @@ def update_with_all_biomarkers_mc(
 ) -> np.ndarray:
     """Returns updated probabilities after applying all available biomarkers sequentially."""
     biomarker_names = sorted(
-        col.replace("pooled_mean_", "")
+        col.replace('pooled_mean_', '')
         for col in biomarker_stats_df.columns
-        if col.startswith("pooled_mean_")
+        if col.startswith('pooled_mean_')
     )
     df = biomarker_stats_df
     posteriors = np.array(priors_mc, dtype=float, copy=True)
@@ -360,7 +360,7 @@ def cohort_accuracy_per_iteration(
     n_exp, n_iter = probs.shape
     if n_exp == 0:
         return np.zeros(n_iter), np.zeros(n_iter), np.zeros(n_iter)
-    _tl = (true_label or "").strip().lower()
+    _tl = (true_label or '').strip().lower()
     c1 = np.zeros(n_iter)
     c2 = np.zeros(n_iter)
     c3 = np.zeros(n_iter)
@@ -412,7 +412,7 @@ def calculate_mean_confidence_intervals(
     """Returns result dictionary containing mean and confidence intervals."""
     disease_names, symptoms, weights_by_disease, n_iter = load_symptom_weights_auto(
         csv_path=SYMPTOM_WEIGHTS_FILE, negative_diseases=negative_diseases)
-    biomarker_stats_df["disease"] = biomarker_stats_df["disease"].astype(
+    biomarker_stats_df['disease'] = biomarker_stats_df['disease'].astype(
         str).str.strip()
 
     symptoms, weights_by_disease = extend_weights_for_patient_symptoms(
@@ -439,7 +439,7 @@ def calculate_mean_confidence_intervals(
     i_top = int(order_base[0]) if len(order_base) > 0 else 0
     top_disease_symptoms = disease_names[i_top] if disease_names else ""
     top_mean_sym = float(mean_s_base[i_top]) if len(
-        mean_s_base) > i_top else float("nan")
+        mean_s_base) > i_top else float('nan')
 
     symptoms_top1 = (
         disease_names[order_base[0]].strip().lower() if len(

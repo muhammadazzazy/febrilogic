@@ -3,9 +3,7 @@ import time
 from typing import Any
 
 import requests
-import math
 import streamlit as st
-from requests.exceptions import HTTPError
 from pandas import DataFrame
 
 from config import (

@@ -133,7 +133,7 @@ if submitted:
 
     with st.expander('Disease ranking', expanded=True, icon='📈'):
         cols = st.columns(2, gap='medium', border=True)
-        cols[0].subheader('After Symptoms')
+        cols[0].subheader('Symptoms')
         cols[0].dataframe(symptom_df, use_container_width=True, )
-        cols[1].subheader('After Symptoms + Biomarkers')
+        cols[1].subheader('Symptoms + Biomarkers')
         cols[1].dataframe(biomarker_df, use_container_width=True)

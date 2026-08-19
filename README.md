@@ -1,6 +1,7 @@
 <a id="febrilogic"></a>
 
 [![BuyMeACoffee][buymeacoffee-shield]][buymeacoffee-url]
+[![Credly][credly-shield]][credly-url]
 [![LinkedIn][linkedin-shield]][linkedin-url]
 [![Peerlist][peerlist-shield]][peerlist-url]
 
@@ -148,11 +149,20 @@ To get a local copy up and running follow these simple example steps.
 5. Create a .env file
 
    ```.env
-   # Required file path for the symptom and disease data.
-   SYMPTOM_WEIGHTS_FILE=""
+   # AWS access key ID
+   AWS_ACCESS_KEY_ID=""
 
-   # Required file path for disease biomarker statistics.
-   BIOMARKER_STATS_FILE=""
+   # AWS secret access key
+   AWS_SECRET_ACCESS_KEY=""
+
+   # Name of bucket containing the biomarker ranges and symptom weights
+   BUCKET_NAME=""
+
+   # Name of object containing biomarker ranges
+   BIOMARKERS_RANGES_OBJECT=""
+
+   # Name of object containing symptom weights
+   SYMPTOM_WEIGHTS_OBJECT=""
 
    # Optional. Defaults to HS256.
    ALGORITHM="HS256"
@@ -183,6 +193,7 @@ To get a local copy up and running follow these simple example steps.
 
    # Required file path for the verification email template.
    VERIFICATION_EMAIL_TEMPLATE="html/verification_email.html"
+
    # Required.
    SUPPORT_REQUEST_TEMPLATE="html/support_email.html"
 
@@ -415,6 +426,8 @@ Project Link: [https://github.com/muhammadazzazy/febrilogic](https://github.com/
 
 [buymeacoffee-shield]: https://img.shields.io/badge/Buy%20Me%20a%20Coffee-yellow?style=for-the-badge&logo=buy-me-a-coffee
 [buymeacoffee-url]: https://www.buymeacoffee.com/muhammadazzazy
+[credly-shield]: https://img.shields.io/badge/Credly-FF6A00?style=for-the-badge&logo=credly&logoColor=white
+[credly-url]: https://www.credly.com/users/muhammadazzazy
 [linkedin-shield]: https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white
 [linkedin-url]: https://linkedin.com/in/muhammad-azzazy
 [peerlist-shield]: https://img.shields.io/badge/Peerlist-00AA6C?style=for-the-badge&logo=peerlist&logoColor=white

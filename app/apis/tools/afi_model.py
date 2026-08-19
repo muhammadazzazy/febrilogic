@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
-from apis.config import SYMPTOM_WEIGHTS_FILE
+from apis.config import SYMPTOM_WEIGHTS_PATH
 
 
 def disease_to_biomarker_row_name(display_name: str) -> str | None:
@@ -410,8 +410,9 @@ def calculate_mean_confidence_intervals(
         patient_biomarkers: dict[str, float],
         biomarker_stats_df) -> dict[str, Any]:
     """Returns result dictionary containing mean and confidence intervals."""
+
     disease_names, symptoms, weights_by_disease, n_iter = load_symptom_weights_auto(
-        csv_path=SYMPTOM_WEIGHTS_FILE, negative_diseases=negative_diseases)
+        csv_path=SYMPTOM_WEIGHTS_PATH, negative_diseases=negative_diseases)
     biomarker_stats_df['disease'] = biomarker_stats_df['disease'].astype(
         str).str.strip()
 

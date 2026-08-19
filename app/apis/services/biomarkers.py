@@ -5,7 +5,7 @@ from functools import lru_cache
 import pandas as pd
 from pandas import DataFrame
 
-from apis.config import BIOMARKER_STATS_FILE
+from apis.config import BIOMARKERS_RANGES_PATH
 from apis.db.database import SessionLocal
 from apis.models.model import Biomarker, biomarker_units, Unit
 from apis.models.biomarker import BiomarkerInfo
@@ -14,7 +14,7 @@ from apis.models.biomarker import BiomarkerInfo
 @lru_cache(maxsize=1)
 def fetch_biomarker_stats() -> DataFrame:
     """Get cached biomarker statistics dataframe."""
-    biomarker_df: DataFrame = pd.read_csv(BIOMARKER_STATS_FILE)
+    biomarker_df: DataFrame = pd.read_csv(BIOMARKERS_RANGES_PATH)
     biomarker_df['disease'] = biomarker_df['disease'].astype(str).str.strip()
     return biomarker_df
 

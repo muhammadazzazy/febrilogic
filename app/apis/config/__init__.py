@@ -15,13 +15,25 @@ BASE_DIR: Final[Path] = Path(__file__).resolve().parents[3]
 APIS_DIR: Final[Path] = BASE_DIR / 'app' / 'apis'
 
 
-SYMPTOM_WEIGHTS_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('SYMPTOM_WEIGHTS_FILE')
-)
+AWS_ACCESS_KEY_ID: Final[str] = os.environ.get('AWS_ACCESS_KEY_ID')
 
-BIOMARKER_STATS_FILE: Final[Path] = BASE_DIR / Path(
-    os.environ.get('BIOMARKER_STATS_FILE')
-)
+AWS_SECRET_ACCESS_KEY: Final[str] = os.environ.get('AWS_SECRET_ACCESS_KEY')
+
+BUCKET_NAME: Final[str] = os.environ.get('BUCKET_NAME')
+
+SYMPTOM_WEIGHTS_OBJECT: Final[str] = os.environ.get('SYMPTOM_WEIGHTS_OBJECT')
+
+BIOMARKERS_RANGES_OBJECT: Final[str] = os.environ.get(
+    'BIOMARKERS_RANGES_OBJECT')
+
+if not os.path.exists((BASE_DIR / 'data' / 'private')):
+    Path.mkdir(BASE_DIR / 'data' / 'private')
+
+BIOMARKERS_RANGES_PATH: Final[Path] = BASE_DIR / \
+    'data' / 'private' / BIOMARKERS_RANGES_OBJECT
+
+SYMPTOM_WEIGHTS_PATH: Final[Path] = BASE_DIR / \
+    'data' / 'private' / SYMPTOM_WEIGHTS_OBJECT
 
 FAST_API_HOST: Final[str] = os.environ.get('FAST_API_HOST', '0.0.0.0')
 
